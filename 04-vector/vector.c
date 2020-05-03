@@ -2,8 +2,30 @@
 
 
 // Funciones del alumno.
+void vector_destruir(vector_t* vector) {    
+    free(vector->datos);
+    free(vector);
+}
 
-// ...
+bool vector_obtener(vector_t* vector, size_t pos, int* valor) {
+    if (vector->tam == 0 || pos > vector->tam - 1) {
+        return false;
+    }
+    *valor = vector->datos[pos];
+    return true;
+}
+
+bool vector_guardar(vector_t* vector, size_t pos, int valor){    
+    if (vector->tam == 0 || pos > vector->tam - 1) {
+        return false;
+    }
+    vector->datos[pos] = valor;
+    return true;
+}
+
+size_t vector_largo(vector_t* vector) {
+    return vector->tam;
+}
 
 
 // Funciones implementadas por la catedra.
