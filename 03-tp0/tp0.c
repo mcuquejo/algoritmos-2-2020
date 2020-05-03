@@ -14,24 +14,6 @@ void swap (int *x, int *y) {
 }
 
 
-int maximo(int vector[], int n) {
-    if (n == 0) {
-        return -1;
-    }
-    
-    int pos = 0;
-    int maximo = vector[pos];    
-    
-    for(int i = 1; i < n; i++) {
-        if (maximo < vector[i]) {
-            maximo = vector[i];
-            pos = i;
-        }
-    }
-    return pos;
-}
-
-
 int comparar(int vector1[], int n1, int vector2[], int n2) {
     int pos = 0;
     while (n1 > pos && n2 > pos) {
@@ -52,12 +34,27 @@ int comparar(int vector1[], int n1, int vector2[], int n2) {
     return 0;
 }
 
+int maximo(int vector[], int n) {
+    if (n == 0) {
+        return -1;
+    }
+    
+    int pos = 0;
+    int maximo = vector[pos];    
+    
+    for(int i = 0; i < n; i++) {
+        if (maximo < vector[i]) {
+            maximo = vector[i];
+            pos = i;
+        }
+    }
+    return pos;
+}
 
-void seleccion(int vector[], int n) {
-    int cant_elem = n;
-    while (cant_elem > 0) {
-        int p = maximo(vector, cant_elem);
-        swap(&vector[p], &vector[cant_elem - 1]);
-        cant_elem--;
+void seleccion(int vector[], int n) {    
+    if (n == 0) return;
+    for (int i = n - 1; i > 0; i--) {
+        int p = maximo(vector, i);
+        if (vector[i] < vector[p]) swap(&vector[p], &vector[i]);
     }
 }

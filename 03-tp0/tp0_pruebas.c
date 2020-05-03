@@ -95,6 +95,7 @@ void prueba_comparar() {
 	comparar(vec3, nvec3, vec4, nvec4) == -1);
 	print_test("Prueba comparar vec4, vec3",
 	comparar(vec4, nvec4, vec3, nvec3) == 1);
+	printf("RESULTADO %d\n", comparar(vec4, nvec4, vec3, nvec3));
 	print_test("Prueba comparar vec6, vec7",
 	comparar(vec6, nvec6, vec7, nvec7) == 1);
 	print_test("Prueba comparar vec7, vec6",
@@ -145,6 +146,9 @@ void prueba_seleccion() {
 	seleccion(vec1, nvec1);
 	print_test("Prueba seleccion vec1",
 	comparar(vec1, nvec1, vec1_ord, nvec1) == 0);
+	for (int i = 0; i < nvec1; i++){
+		printf("%d\n", vec1[i]);
+	}
 
 	seleccion(vec2, nvec2);
 	print_test("Prueba seleccion vec2",
