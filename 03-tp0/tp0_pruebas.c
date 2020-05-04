@@ -1,6 +1,7 @@
 #include "tp0.h"
 #include "testing.h"
 #include <stddef.h>
+#include <stdio.h>
 
 /* ******************************************************************
  *                        PRUEBAS UNITARIAS
@@ -11,6 +12,8 @@ void prueba_swap() {
 	int a = 5, b = 6;
 	swap(&a,&b);
 	print_test("Prueba swap 1", (a==6 && b==5));
+	printf("%d\n", a);
+    printf("%d\n", b);
 
 	a = 10, b = -10;
 	swap(&a,&b);
@@ -92,6 +95,7 @@ void prueba_comparar() {
 	comparar(vec3, nvec3, vec4, nvec4) == -1);
 	print_test("Prueba comparar vec4, vec3",
 	comparar(vec4, nvec4, vec3, nvec3) == 1);
+	printf("RESULTADO %d\n", comparar(vec4, nvec4, vec3, nvec3));
 	print_test("Prueba comparar vec6, vec7",
 	comparar(vec6, nvec6, vec7, nvec7) == 1);
 	print_test("Prueba comparar vec7, vec6",
@@ -142,14 +146,22 @@ void prueba_seleccion() {
 	seleccion(vec1, nvec1);
 	print_test("Prueba seleccion vec1",
 	comparar(vec1, nvec1, vec1_ord, nvec1) == 0);
+	for (int i = 0; i < nvec1; i++){
+		printf("%d\n", vec1[i]);
+	}
 
 	seleccion(vec2, nvec2);
 	print_test("Prueba seleccion vec2",
 	comparar(vec2, nvec2, vec2_ord, nvec2) == 0);
-
+	for (int i = 0; i < nvec2; i++){
+		printf("%d\n", vec2[i]);
+	}
 	seleccion(vec3, nvec3);
 	print_test("Prueba seleccion vec3",
 	comparar(vec3, nvec3, vec3_ord, nvec3) == 0);
+	for (int i = 0; i < nvec3; i++){
+		printf("%d\n", vec3[i]);
+	}
 }
 
 /* ******************************************************************
