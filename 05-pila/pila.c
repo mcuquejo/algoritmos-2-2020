@@ -26,10 +26,7 @@ bool redimensionar(pila_t* pila, size_t tam_nuevo) {
 
     pila->datos = datos_nuevo;
     pila->capacidad = tam_nuevo;
-
-    if (tam_nuevo > pila->capacidad) {
-        memset(pila->datos[pila->cantidad], '\0', (pila->capacidad - pila->cantidad));
-    }
+    
     return true;
 }
 
@@ -42,8 +39,8 @@ pila_t* pila_crear(void) {
         return NULL;
     }
     pila->cantidad = 0;
-    pila->capacidad = TAM;
-    pila->datos = calloc(pila->capacidad, sizeof(void*));
+    pila->capacidad = TAM;    
+    pila->datos = malloc (pila->capacidad * sizeof(void*));
 
     if (pila->datos == NULL) {
         free(pila);
