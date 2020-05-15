@@ -2,7 +2,6 @@
 #include "testing.h"
 #include <stddef.h>
 #include <stdlib.h>
-#include <stdio.h>
 #define CANT_ELEMENTOS 10000
 
 /* ******************************************************************
