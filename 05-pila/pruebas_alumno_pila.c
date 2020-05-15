@@ -95,6 +95,24 @@ void pruebas_apilar_muchos_elementos(size_t cant_elem) {
     print_test("La pila esta vacia", pila_esta_vacia(pila));
     print_test("no permite desapilar una pila vacia", pila_desapilar(pila) == NULL);
     
+    /* Pruebo guardar en todas las posiciones */
+    size_t i;
+    bool ok = true;
+    for (i = 0; i < cant_elem; i++) {
+        // Si algun elemento no se pudo guardar correctamente, ok sera false
+        ok &= pila_apilar(pila, &i);
+    }
+    print_test("se pudieron guardar todos los elementos", ok);
+
+    /* Pruebo que lo guardado sea correcto */
+    ok = true;
+    int valor;
+    for (i = 0; i < cant_elem; i++) {
+        valor = *(int*)pila_desapilar(pila);
+        ok &= (valor == i);
+    }
+    print_test("se pudieron obtener todos los elementos", ok);
+    
     pila_destruir(pila);
     print_test("Se destruye pila", true);
 }
@@ -154,8 +172,8 @@ void pruebas_pila_vacia() {
 
     pila_destruir(pila);
     print_test("Se destruye pila", true);   
-}   
-    
+}
+
 
 void pruebas_pila_alumno() {
     pruebas_pila_null();
