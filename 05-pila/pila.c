@@ -86,8 +86,7 @@ void* pila_desapilar(pila_t *pila) {
         return NULL;
     }    
 
-    void* dato = pila->datos[pila->cantidad - 1];
-    pila->datos[pila->cantidad - 1] = NULL;
+    void* dato = pila->datos[pila->cantidad - 1];    
     pila->cantidad--;
     
     if (pila->cantidad <= (double)pila->capacidad * CAP_MIN_REDIM && pila->capacidad / 2 >= TAM) {
@@ -96,5 +95,4 @@ void* pila_desapilar(pila_t *pila) {
         };
     }
     return dato;
-
 }
