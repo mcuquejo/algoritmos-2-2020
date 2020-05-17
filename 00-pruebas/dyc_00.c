@@ -24,12 +24,9 @@ bool es_magico(int arreglo[], int inicio, int fin) {
     }    
     if (arreglo[medio] > medio) {
         return es_magico(arreglo, inicio, medio - 1);
-    }
-    if (arreglo[medio] < medio) {
+    } else {
         return es_magico(arreglo, medio + 1, fin);
     }
-    
-    return false;
 }
 
 void probar_es_magico(int* arreglo, int tam) {
