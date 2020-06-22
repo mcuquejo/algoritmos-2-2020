@@ -1,4 +1,5 @@
 #include "lista.h"
+#include <stdlib.h>
 
 typedef struct nodo {
     void* dato;
