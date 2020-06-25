@@ -21,7 +21,7 @@ void pruebas_crear_destruir_lista() {
     lista_destruir(lista, NULL);
     print_test("Se destruye lista", true);
 }
-    // Se pueda agregar elementos a la lista, y que al borrarlos se mantenga el invariante de lista.
+    // Se pueda agregar elementos a la lista, y que al borrarlos se mantenga el invariante de lista. (prueba con lista_insertar_ultimo)
 void pruebas_enlistar_desenlistar_ultimo() {
     lista_t* lista = lista_crear();
     print_test("Se crea lista", lista != NULL);
@@ -58,6 +58,7 @@ void pruebas_enlistar_desenlistar_ultimo() {
     
 }
 
+// Se pueda agregar elementos a la lista, y que al borrarlos se mantenga el invariante de lista. (prueba con lista_insertar_primero)
 void pruebas_enlistar_desenlistar_primero() {
     lista_t* lista = lista_crear();
     print_test("Se crea lista", lista != NULL);
@@ -146,6 +147,11 @@ void pruebas_enlistar_ultimo_muchos_elementos(size_t cant_elem) {
     print_test("Se destruye lista", true);
 }
 
+// Prueba de volumen: Se pueden agregar al principio de la lista muchos elementos (1000, 10000 elementos, o el volumen que corresponda): hacer crecer la lista hasta un valor
+    //  sabido mucho mayor que el tamaño inicial, y borrar el primer elemento hasta que esté vacía, comprobando que siempre cumpla el invariante. 
+    //  Recordar no enlistar siempre el mismo puntero, 
+    //  validar que se cumpla siempre que el primer elemento de la lista sea el correcto paso a paso, 
+    //  y que el nuevo primer elemento después de cada llamada a lista_borrar_primero() también sea el correcto.
 void pruebas_enlistar_primero_muchos_elementos(size_t cant_elem) {
     lista_t* lista = lista_crear();
     print_test("Se crea lista", lista != NULL);
@@ -194,7 +200,7 @@ void pruebas_enlistar_primero_muchos_elementos(size_t cant_elem) {
     print_test("Se destruye lista", true);
 }
 
-    // Insertar elemento NULL al final de la lista es válido.
+    // Insertar elemento NULL tanto al principio como al final de la lista es válido.
 void pruebas_enlistar_null() {
     lista_t* lista = lista_crear();
     print_test("Se crea lista", lista != NULL);
@@ -258,7 +264,7 @@ void inner_lista_destruir(void* lista) {
     lista_destruir(lista, NULL);
 }
 
-
+//pruebas sobre una lista con datos en stack, borrados con funcion inner_lista_destruir
 void pruebas_lista_dato_dinamica() {
     lista_t* lista = lista_crear();
     print_test("Se crea lista", lista != NULL);
@@ -321,14 +327,23 @@ lista_t* crear_lista_pruebas(){
     *elem3 = "palabra\0";
     int* elem4 = malloc(sizeof(int));
     *elem4 = 105;
-    lista_insertar_primero(lista, elem1);    
-    lista_insertar_ultimo(lista, elem2);    
-    lista_insertar_primero(lista, elem3);    
-    lista_insertar_ultimo(lista, elem4);    
+    lista_insertar_primero(lista, elem1);
+    print_test("el primer elemento es: 99", *(int*)lista_ver_primero(lista) == 99);    
+    print_test("el ultimo elemento es: 99", *(int*)lista_ver_ultimo(lista) == 99);
+    lista_insertar_ultimo(lista, elem2);
+    print_test("el primer elemento es: 99", *(int*)lista_ver_primero(lista) == 99);
+    print_test("el ultimo elemento es: \'a\'", *(char*)lista_ver_ultimo(lista) == 'a');
+    lista_insertar_primero(lista, elem3);
+    print_test("el primer elemento es: \'palabra\'", strcmp(*(char**)lista_ver_primero(lista), "palabra") == 0);
+    print_test("el ultimo elemento es: \'a\'", *(char*)lista_ver_ultimo(lista) == 'a');
+    lista_insertar_ultimo(lista, elem4);
+    print_test("el primer elemento es: \'palabra\'", strcmp(*(char**)lista_ver_primero(lista), "palabra") == 0);
+    print_test("el ultimo elemento es: 105", *(int*)lista_ver_ultimo(lista) == 105);
     print_test("Se creo una lista con la siguiente estructura: [\'palabra\', 99, \'a\', 105]", true);    
     return lista;
 }
 
+//pruebas iterador externo con una lista creada insertando valores de distintos tipos y con funciones de insertar al principio y al final
 void pruebas_iterador_externo(){
     lista_t* lista = crear_lista_pruebas();
     lista_iter_t* iter_externo = lista_iter_crear(lista);
@@ -364,6 +379,7 @@ bool imprimir_algunos_elementos(void* dato, void* extra) {
     return true;
 } 
 
+//pruebas iterador interno que recorren la lista tanto de forma completa como parcial
 void pruebas_iterador_interno() {
     size_t cant_lista = 10;
     lista_t* lista = lista_crear();
