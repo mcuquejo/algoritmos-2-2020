@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include <stdlib.h>
+#include <stddef.h>
 
 /* La lista está planteada como una lista de punteros genéricos. */
 typedef struct lista lista_t;
