@@ -360,6 +360,7 @@ void pruebas_iterador_externo(){
     print_test("Debe permitir avanzar con el iterador hasta el final de la lista", lista_iter_avanzar(iter_externo));
     print_test("El iterador se encuentra al final de la lista", lista_iter_al_final(iter_externo));
     print_test("No debe permitir avanzar al iterador estando al final de la lista", !lista_iter_avanzar(iter_externo));
+    print_test("El elemento actual cuando la lista esta al final debe ser NULL", !lista_iter_ver_actual(iter_externo));
     lista_iter_destruir(iter_externo);
     lista_destruir(lista, free);
 }
