@@ -152,7 +152,7 @@ bool lista_iter_avanzar(lista_iter_t *iter) {
     return true;
 }
 void *lista_iter_ver_actual(const lista_iter_t *iter){
-    if (lista_esta_vacia(iter->lista)) {
+    if (lista_esta_vacia(iter->lista) || lista_iter_al_final(iter)) {
         return NULL;
     }
     return iter->actual->dato;
