@@ -106,7 +106,7 @@ void *lista_ver_ultimo(const lista_t* lista) {
     if (lista_esta_vacia(lista)) {
         return NULL;
     }
-    return lista->ultimo;
+    return lista->ultimo->dato;
 }
 
 size_t lista_largo(const lista_t *lista) {
