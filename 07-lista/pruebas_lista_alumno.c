@@ -2,6 +2,7 @@
 #include "testing.h"
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #define CANT_ELEMENTOS 10000
 
 /* ******************************************************************
@@ -310,8 +311,78 @@ void pruebas_lista_dato_dinamica() {
     print_test("permitio destruir la lista 2 llamando una funcion de destrucion para inner lista que estaba en memoria dinamica.", true);
 }
 
+lista_t* crear_lista_pruebas(){
+    lista_t* lista = lista_crear();
+    int* elem1 = malloc(sizeof(int));
+    *elem1 = 99;
+    char* elem2 = malloc(sizeof(char));
+    *elem2 = 'a';
+    char** elem3 = malloc(sizeof(char*) * 10);
+    *elem3 = "palabra\0";
+    int* elem4 = malloc(sizeof(int));
+    *elem4 = 105;
+    lista_insertar_primero(lista, elem1);    
+    lista_insertar_ultimo(lista, elem2);    
+    lista_insertar_primero(lista, elem3);    
+    lista_insertar_ultimo(lista, elem4);    
+    print_test("Se creo una lista con la siguiente estructura: [\'palabra\', 99, \'a\', 105]", true);    
+    return lista;
+}
+
+void pruebas_iterador_externo(){
+    lista_t* lista = crear_lista_pruebas();
+    lista_iter_t* iter_externo = lista_iter_crear(lista);
+    char* elemento = *(char**)lista_ver_primero(lista);
+    char* elemento_desde_iter = *(char**)lista_iter_ver_actual(iter_externo);
+    print_test("Cuando se crea el iterador, el primer valor deberia ser \'palabra\' (visto con lista_ver_primero())", strcmp(elemento, "palabra") == 0);
+    print_test("Cuando se crea el iterador, el primer valor deberia ser \'palabra\' (visto con lista_iter_ver_actual())", strcmp(elemento_desde_iter, "palabra") == 0);
+    print_test("Permitio avanzar correctamente al siguiente elemento con el iterador externo", lista_iter_avanzar(iter_externo));
+    print_test("Al avanzar con el iterador, el elemento debe tener valor 99 (visto con lista_iter_ver_actual())", *(int*)lista_iter_ver_actual(iter_externo) == 99);
+    print_test("Permitio avanzar correctamente al siguiente elemento con el iterador externo", lista_iter_avanzar(iter_externo));
+    print_test("Al avanzar con el iterador, el elemento debe tener valor \'a\' (visto con lista_iter_ver_actual())", *(char*)lista_iter_ver_actual(iter_externo) == 'a');
+    print_test("Permitio avanzar correctamente al siguiente elemento con el iterador externo", lista_iter_avanzar(iter_externo));
+    print_test("Al avanzar con el iterador, el elemento debe tener valor 99 (visto con lista_iter_ver_actual())", *(int*)lista_iter_ver_actual(iter_externo) == 105);
+    print_test("Debe permitir avanzar con el iterador hasta el final de la lista", lista_iter_avanzar(iter_externo));
+    print_test("El iterador se encuentra al final de la lista", lista_iter_al_final(iter_externo));
+    print_test("No debe permitir avanzar al iterador estando al final de la lista", !lista_iter_avanzar(iter_externo));
+    lista_iter_destruir(iter_externo);
+    lista_destruir(lista, free);
+}
+
+bool imprimir_todo(void* dato, void* extra) {
+    print_test("resultado exitoso al imprimir todos los elementos: ", dato);
+    return true;
+} 
+
+bool imprimir_algunos_elementos(void* dato, void* extra) { 
+    if (*(size_t*) extra >= 5) { 
+        return false; 
+    }
+    size_t *contador = extra;
+    (*contador)++;
+    print_test("resultado exitoso al imprimir algunos elementos:", dato);
+    return true;
+} 
+
+void pruebas_iterador_interno() {
+    size_t cant_lista = 10;
+    lista_t* lista = lista_crear();
+    print_test("Lista: Creada correctamente", lista);    
+    int vector[cant_lista];
+    bool resultado_exitoso = true;    
+    for (int i = 0; i < cant_lista; i++) {
+        vector[i] = i;
+        resultado_exitoso &= lista_insertar_primero(lista, &vector[i]);
+    }    
+    lista_iterar(lista, imprimir_todo, NULL);    
+    size_t contador = 0;
+    lista_iterar(lista, imprimir_algunos_elementos, &contador);    
+    lista_destruir(lista, NULL);
+}
 
 void pruebas_lista_alumno() {
+    pruebas_iterador_externo();
+    pruebas_iterador_interno();
     pruebas_lista_null();
     pruebas_crear_destruir_lista();
     pruebas_enlistar_desenlistar_primero();
