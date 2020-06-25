@@ -208,8 +208,13 @@ void *lista_iter_borrar(lista_iter_t *iter) {
 void lista_iterar(lista_t* lista, bool visitar(void* dato, void* extra), void* extra){
     nodo_t* elemento = lista->primero;
     size_t contador = 0;
-    while (visitar(elemento->dato, extra) && contador <= lista_largo(lista)) {
-        elemento = elemento->proximo;
-        contador++;
+    while (contador < lista_largo(lista)) {
+        if (visitar(elemento->dato, extra)) {
+            elemento = elemento->proximo;
+            contador++;
+        } else {
+            return;
+        }
+        
     }
 }
