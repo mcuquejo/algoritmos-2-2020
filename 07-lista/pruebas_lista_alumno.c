@@ -21,7 +21,7 @@ void pruebas_crear_destruir_lista() {
     print_test("Se destruye lista", true);
 }
     // Se pueda agregar elementos a la lista, y que al borrarlos se mantenga el invariante de lista.
-void pruebas_enlistar_desenlistar() {
+void pruebas_enlistar_desenlistar_ultimo() {
     lista_t* lista = lista_crear();
     print_test("Se crea lista", lista != NULL);
 
@@ -56,12 +56,48 @@ void pruebas_enlistar_desenlistar() {
     print_test("Se destruye lista", true);
     
 }
+
+void pruebas_enlistar_desenlistar_primero() {
+    lista_t* lista = lista_crear();
+    print_test("Se crea lista", lista != NULL);
+
+    print_test("no permite borrar primer elemento en  una lista vacia", lista_borrar_primero(lista) == NULL);
+
+    int elem1 = 99;
+    char elem2 = 'a';
+    char* elem3 = "palabra";    
+
+    lista_insertar_primero(lista, &elem1);    
+    print_test("Se agrego correctamente elem1 con valor 99 al principio de la lista", *(int*)lista_ver_primero(lista) == elem1);
+    print_test("permite borrar primer elemento con un solo elemento", *(int*)lista_borrar_primero(lista) == elem1);
+    print_test("no permite borrar primer elemento en  una lista vacia", lista_borrar_primero(lista) == NULL);
+
+    lista_insertar_primero(lista, &elem2);
+    print_test("Se agrego correctamente elem2 con valor \'a\' al principio de la lista.", *(char*)lista_ver_primero(lista) == elem2);
+
+    lista_insertar_primero(lista, &elem3);
+    print_test("Se agrego correctamente elem3 con valor \'palabra\' al principio de la lista. El primer elemento ahora es \'palabra\'", *(char**)lista_ver_primero(lista) == elem3);
+    
+    print_test("permite borrar primer elemento con dos elementos", *(char**)lista_borrar_primero(lista) == elem3);
+    print_test("El primer elemento ahora es elem3 con valor \'a\'", *(char*)lista_ver_primero(lista) == elem2);
+
+    print_test("permite borrar primer elemento con un solo elemento", *(char*)lista_borrar_primero(lista) == elem2);
+
+    print_test("el primer elemento es NULL cuando la lista está vacia", lista_ver_primero(lista) == NULL);
+
+    print_test("La lista esta vacia", lista_esta_vacia(lista));
+    print_test("no permite borrar primer elemento en  una lista vacia", lista_borrar_primero(lista) == NULL);
+
+    lista_destruir(lista, NULL);
+    print_test("Se destruye lista", true);
+    
+}
     // Prueba de volumen: Se pueden agregar al final de la lista muchos elementos (1000, 10000 elementos, o el volumen que corresponda): hacer crecer la lista hasta un valor
     //  sabido mucho mayor que el tamaño inicial, y borrar el primer elemento hasta que esté vacía, comprobando que siempre cumpla el invariante. 
     //  Recordar no enlistar siempre el mismo puntero, 
     //  validar que se cumpla siempre que el primer elemento de la lista sea el correcto paso a paso, 
     //  y que el nuevo primer elemento después de cada llamada a lista_borrar_primero() también sea el correcto.
-void pruebas_enlistar_muchos_elementos(size_t cant_elem) {
+void pruebas_enlistar_ultimo_muchos_elementos(size_t cant_elem) {
     lista_t* lista = lista_crear();
     print_test("Se crea lista", lista != NULL);
     
@@ -109,12 +145,63 @@ void pruebas_enlistar_muchos_elementos(size_t cant_elem) {
     print_test("Se destruye lista", true);
 }
 
+void pruebas_enlistar_primero_muchos_elementos(size_t cant_elem) {
+    lista_t* lista = lista_crear();
+    print_test("Se crea lista", lista != NULL);
+    
+    int elem1 = 77;
+    char elem2 = 'a';
+
+    for (size_t i = 0; i < cant_elem; i++) {
+        if (i % 2 == 0) {
+            lista_insertar_primero(lista, &elem1);
+        } else {
+            lista_insertar_primero(lista, &elem2);
+        }                 
+    }
+    
+    print_test("Los elementos se agregaron correctamente al inicio de la lista", *(char*)lista_ver_primero(lista) == elem2);    
+    
+    lista_borrar_primero(lista);
+    print_test("Se elimino primer elemento de la lista correctamente", *(int*)lista_ver_primero(lista) == elem1);    
+
+    for (size_t i = 0; i < cant_elem - 1; i++) {
+        lista_borrar_primero(lista);
+    }
+    print_test("La lista esta vacia", lista_esta_vacia(lista));
+    print_test("no permite borrar primer elemento en  una lista vacia", lista_borrar_primero(lista) == NULL);
+    
+    // Pruebo que inserte correctamente cada elemento al inicio de la lista
+    size_t i;
+    bool ok = true;
+    for (i = 0; i < cant_elem; i++) {
+        // Si algun elemento no se pudo agregar correctamente al inicio de la lista, ok sera false
+        ok &= lista_insertar_primero(lista, &i);
+    }
+    print_test("se pudieron insertar todos los elementos al inicio de la lista", ok);
+
+    /* Pruebo que lo guardado sea correcto */
+    ok = true;
+    int valor;
+    for (i = 0; i < cant_elem; i++) {
+        valor = *(int*)lista_borrar_primero(lista);
+        ok &= (valor == i);
+    }
+    print_test("se pudieron obtener todos los elementos de la lista", ok);
+    
+    lista_destruir(lista, NULL);
+    print_test("Se destruye lista", true);
+}
+
     // Insertar elemento NULL al final de la lista es válido.
 void pruebas_enlistar_null() {
     lista_t* lista = lista_crear();
     print_test("Se crea lista", lista != NULL);
     lista_insertar_ultimo(lista, NULL);
     print_test("Permitio agregar un elemento de valor NULL al final de la lista", lista_ver_primero(lista) == NULL);
+    print_test("Permitio borrar primer elemento de valor NULL de la lista", lista_borrar_primero(lista) == NULL);
+    lista_insertar_primero(lista, NULL);
+    print_test("Permitio agregar un elemento de valor NULL al inicio de la lista", lista_ver_primero(lista) == NULL);
     print_test("Permitio borrar primer elemento de valor NULL de la lista", lista_borrar_primero(lista) == NULL);
     lista_destruir(lista, NULL);
     print_test("Se destruye lista", true);
@@ -227,8 +314,10 @@ void pruebas_lista_dato_dinamica() {
 void pruebas_lista_alumno() {
     pruebas_lista_null();
     pruebas_crear_destruir_lista();
-    pruebas_enlistar_desenlistar();    
-    pruebas_enlistar_muchos_elementos(CANT_ELEMENTOS);
+    pruebas_enlistar_desenlistar_primero();
+    pruebas_enlistar_desenlistar_ultimo();
+    pruebas_enlistar_primero_muchos_elementos(CANT_ELEMENTOS);
+    pruebas_enlistar_ultimo_muchos_elementos(CANT_ELEMENTOS);
     pruebas_enlistar_null();
     pruebas_desenlistar_hasta_vaciar();
     pruebas_lista_dato_dinamica();
