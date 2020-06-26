@@ -194,7 +194,10 @@ void *lista_iter_borrar(lista_iter_t *iter) {
     void* dato = auxiliar->dato;
 
     if (iter->actual == iter->lista->primero) {        
-        iter->lista->primero = iter->actual->proximo;        
+        iter->lista->primero = iter->actual->proximo;
+        if (!iter->lista->primero) {
+            iter->lista->ultimo = NULL;
+        }
     } else {
         iter->anterior->proximo = iter->actual->proximo;
         if (iter->actual == iter->lista->ultimo) {            
