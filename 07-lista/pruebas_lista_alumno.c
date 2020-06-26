@@ -371,7 +371,81 @@ void pruebas_iterador_externo(){
     print_test("El elemento actual cuando la lista esta al final debe ser NULL", !lista_iter_ver_actual(iter_externo));
     print_test("No debe permitir avanzar al iterador estando al final de la lista", !lista_iter_avanzar(iter_externo));
     print_test("El elemento actual cuando la lista esta al final debe ser NULL", !lista_iter_ver_actual(iter_externo));
+    int* elem6 = malloc(sizeof(int));
+    *elem6 = 107;
+    lista_iter_insertar(iter_externo, elem6);
+    print_test("El iterador ya no se encuentra al final de la lista", !lista_iter_al_final(iter_externo));
+    print_test("El elemento actual Ahora es 107", *(int*)lista_iter_ver_actual(iter_externo) == 107);
+    print_test("Permite borrar correctamente el elemento de la lista de valor 107", *(int*)lista_iter_borrar(iter_externo) == 107);
+    print_test("El iterador se encuentra nuevamente al final de la lista", lista_iter_al_final(iter_externo));
+    print_test("El elemento actual Ahora es NULL", lista_iter_ver_actual(iter_externo) == NULL);
     lista_iter_destruir(iter_externo);
+    lista_iter_t* iter_externo2 = lista_iter_crear(lista);
+    lista_iter_avanzar(iter_externo2);
+    lista_iter_avanzar(iter_externo2);
+    lista_iter_avanzar(iter_externo2);
+    lista_iter_avanzar(iter_externo2);
+    lista_iter_avanzar(iter_externo2);
+    lista_iter_avanzar(iter_externo2);
+    lista_iter_avanzar(iter_externo2);
+    lista_iter_avanzar(iter_externo2);
+    lista_iter_destruir(iter_externo2);
+    free(elem6);    
+    lista_destruir(lista, free);
+}
+
+//pruebas utilizando dos iteradores externos sobre la misma lista.
+void pruebas_dos_iteradores_externos() {
+    lista_t* lista = crear_lista_pruebas();
+
+    lista_iter_t* iter_externo3 = lista_iter_crear(lista);
+    char* elemento1_desde_lista = *(char**)lista_ver_primero(lista);
+    print_test("El primer valor de la lista es \'palabra\' (visto con lista_ver_primero())", strcmp(elemento1_desde_lista, "palabra") == 0);
+    print_test("El ultimo valor de la lista deberia ser 105 (visto con lista_ver_ultimo())", *(int*)lista_ver_ultimo(lista) == 105);
+    char* elemento1_desde_iter3 = *(char**)lista_iter_ver_actual(iter_externo3);
+    print_test("Cuando se crea el iterador, el primer valor deberia ser \'palabra\' (visto con lista_ver_primero())", strcmp(elemento1_desde_iter3, "palabra") == 0);
+    
+    char** elem_a_liberar_1 = (char**)lista_iter_borrar(iter_externo3);
+    print_test("Se elimina el elemento actual de iter 3. El valor eliminado deberia ser \'palabra\'", strcmp(*elem_a_liberar_1, "palabra") == 0);
+    lista_iter_t* iter_externo4 = lista_iter_crear(lista);
+    int elemento2_desde_iter3 = *(int*)lista_iter_ver_actual(iter_externo3);
+    print_test("El iterador 3 deberia estar apuntando al valor 99", elemento2_desde_iter3 == 99);    
+    int elemento2_desde_iter4 = *(int*)lista_iter_ver_actual(iter_externo4);
+    print_test("Cuando se crea el iterador 4, el valor al que apunta, deberia ser 99", elemento2_desde_iter4 == 99);
+    print_test("Permitio avanzar correctamente al siguiente elemento con el iterador externo 3", lista_iter_avanzar(iter_externo3));
+    print_test("Permitio avanzar correctamente al siguiente elemento con el iterador externo 4", lista_iter_avanzar(iter_externo4));    
+    int elemento3_desde_iter3 = *(char*)lista_iter_ver_actual(iter_externo3);
+    print_test("El iterador 3 deberia estar apuntando al valor 99", elemento3_desde_iter3 == 'a');    
+    int elemento3_desde_iter4 = *(char*)lista_iter_ver_actual(iter_externo4);
+    print_test("Cuando se crea el iterador 4, el valor al que apunta, deberia ser 99", elemento3_desde_iter4 == 'a');
+    int elemento3_desde_lista = *(int*)lista_ver_primero(lista);
+    print_test("El primer valor de la lista es 99 (visto con lista_ver_primero())", elemento3_desde_lista == 99);
+    print_test("El ultimo valor de la lista sigue siendo 105 (visto con lista_ver_ultimo())", *(int*)lista_ver_ultimo(lista) == 105);
+
+    print_test("Permitio avanzar correctamente al siguiente elemento con el iterador externo 3", lista_iter_avanzar(iter_externo3));
+    int* elem_a_liberar_2 = (int*)lista_iter_borrar(iter_externo3);
+    //desde iterador
+    print_test("Se elimina el elemento actual de iter 3. El valor eliminado deberia ser 105", *elem_a_liberar_2 == 105);
+    print_test("El iterador 3 se encuentra al final de la lista", lista_iter_al_final(iter_externo3));    
+    char* elemento4_desde_iter4 = (char*)lista_iter_ver_actual(iter_externo4);    
+    print_test("El iterador 4 deberia estar apuntando al valor \'a\'", *elemento4_desde_iter4 == 'a');
+
+    //desde lista    
+    print_test("El primer valor de la lista es 99 (visto con lista_ver_primero())", *(int*)lista_ver_primero(lista) == 99);
+    print_test("El ultimo valor de la lista ahora es \'a\' (visto con lista_ver_ultimo())", *(char*)lista_ver_ultimo(lista) == 'a');
+    
+    print_test("Permitio avanzar correctamente al siguiente elemento con el iterador externo 4", lista_iter_avanzar(iter_externo4));
+    print_test("El iterador 4 se encuentra al final de la lista", lista_iter_al_final(iter_externo4));    
+    print_test("El primer valor de la lista es 99 (visto con lista_ver_primero())", *(int*)lista_ver_primero(lista) == 99);
+    print_test("El ultimo valor de la lista ahora es \'a\' (visto con lista_ver_ultimo())", *(char*)lista_ver_ultimo(lista) == 'a');
+    print_test("El iterador 3 deberia estar apuntando NULL", !lista_iter_ver_actual(iter_externo3));
+    print_test("El iterador 4 deberia estar apuntando NULL", !lista_iter_ver_actual(iter_externo4));
+    
+    free(elem_a_liberar_1);
+    free(elem_a_liberar_2);
+    
+    lista_iter_destruir(iter_externo3);
+    lista_iter_destruir(iter_externo4);
     lista_destruir(lista, free);
 }
 
@@ -409,6 +483,7 @@ void pruebas_iterador_interno() {
 
 void pruebas_lista_alumno() {
     pruebas_iterador_externo();
+    pruebas_dos_iteradores_externos();
     pruebas_iterador_interno();
     pruebas_lista_null();
     pruebas_crear_destruir_lista();
