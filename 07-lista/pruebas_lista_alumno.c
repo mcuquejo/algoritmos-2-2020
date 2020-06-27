@@ -440,12 +440,127 @@ void pruebas_dos_iteradores_externos() {
     print_test("El ultimo valor de la lista ahora es \'a\' (visto con lista_ver_ultimo())", *(char*)lista_ver_ultimo(lista) == 'a');
     print_test("El iterador 3 deberia estar apuntando NULL", !lista_iter_ver_actual(iter_externo3));
     print_test("El iterador 4 deberia estar apuntando NULL", !lista_iter_ver_actual(iter_externo4));
-    
+    int* elem_nuevo = malloc(sizeof(int));
+    *elem_nuevo = 333;
+    lista_iter_insertar(iter_externo4, elem_nuevo);
+    print_test("El elemento actual del iterador 4 Ahora es 333", *(int*)lista_iter_ver_actual(iter_externo4) == 333);
+//ver primero ver ultimo ver actual
+
     free(elem_a_liberar_1);
     free(elem_a_liberar_2);
     
     lista_iter_destruir(iter_externo3);
     lista_iter_destruir(iter_externo4);
+    lista_destruir(lista, free);
+}
+
+    // Crea una lista.
+    // Crea un iterador A
+    // Con el iter A hace validaciones de lista vacía y luego inserta un elemento "a" a la lista y repite validaciones(ver primero, ver ultimo, largo, esta al final).
+    // El iter A avanza y repite validaciones (no puede avanzar más, esta al final).
+    // Inserta un elemento "b" con el iter A y destruye el iterador.
+    // Se inserta un elemento nuevo "c" a la lista (sin iterador). Hasta este momento nos encontramos con algo así: a -> b -> c
+    // Se crea un iterador B y avanza sobre la lista. Una vez que se encuentra al final, destruye el iterador.
+void prueba_dos_iteradores_externos_tipo_catedra() {
+    lista_t* lista = lista_crear();
+    lista_iter_t* iter_externo_a = lista_iter_crear(lista);
+    print_test("el valor actual del iterador es NULL", lista_iter_ver_actual(iter_externo_a) == NULL);    
+    print_test("El primer elemento de la lista es NULL", lista_ver_primero(lista) == NULL);
+    print_test("El ultimo elemento de la lista es NULL", lista_ver_ultimo(lista) == NULL);
+    print_test("la cantidad de elementos de la lista es 0", lista_largo(lista)  == 0);
+    print_test("El iterador se encuentra al final de la lista", lista_iter_al_final(iter_externo_a));
+
+    int* elemento_a = malloc(sizeof(int));
+    *elemento_a = 500;
+
+    lista_iter_insertar(iter_externo_a, elemento_a);
+    print_test("el valor actual del iterador es 500", *(int*)lista_iter_ver_actual(iter_externo_a) == 500);    
+    print_test("El primer elemento de la lista es 500", *(int*)lista_ver_primero(lista) == 500);
+    print_test("El ultimo elemento de la lista es 500", *(int*)lista_ver_ultimo(lista) == 500);
+    print_test("la cantidad de elementos de la lista es 1", lista_largo(lista)  == 1);
+    print_test("El iterador no se encuentra al final de la lista", !lista_iter_al_final(iter_externo_a));
+
+    lista_iter_avanzar(iter_externo_a);
+    print_test("el valor actual del iterador es NULL", lista_iter_ver_actual(iter_externo_a) == NULL);    
+    print_test("El primer elemento de la lista es 500", *(int*)lista_ver_primero(lista) == 500);
+    print_test("El ultimo elemento de la lista es 500", *(int*)lista_ver_ultimo(lista) == 500);
+    print_test("la cantidad de elementos de la lista es 1", lista_largo(lista)  == 1);
+    print_test("El iterador se encuentra al final de la lista", lista_iter_al_final(iter_externo_a));
+
+    lista_iter_avanzar(iter_externo_a);
+    print_test("el valor actual del iterador es NULL", lista_iter_ver_actual(iter_externo_a) == NULL);    
+    print_test("El primer elemento de la lista es 500", *(int*)lista_ver_primero(lista) == 500);
+    print_test("El ultimo elemento de la lista es 500", *(int*)lista_ver_ultimo(lista) == 500);
+    print_test("la cantidad de elementos de la lista es 1", lista_largo(lista)  == 1);
+    print_test("El iterador se encuentra al final de la lista", lista_iter_al_final(iter_externo_a));
+    
+    int* elemento_b = malloc(sizeof(int));
+    *elemento_b = 600;
+
+    lista_iter_insertar(iter_externo_a, elemento_b);
+    print_test("el valor actual del iterador es 600", *(int*)lista_iter_ver_actual(iter_externo_a) == 600);    
+    print_test("El primer elemento de la lista es 500", *(int*)lista_ver_primero(lista) == 500);
+    print_test("El ultimo elemento de la lista es 600", *(int*)lista_ver_ultimo(lista) == 600);
+    print_test("la cantidad de elementos de la lista es 2", lista_largo(lista)  == 2);
+    print_test("El iterador no se encuentra al final de la lista", !lista_iter_al_final(iter_externo_a));
+
+    lista_iter_destruir(iter_externo_a);
+
+    int* elemento_c = malloc(sizeof(int));
+    *elemento_c = 700;
+
+    lista_insertar_ultimo(lista, elemento_c);
+    print_test("El primer elemento de la lista es 500", *(int*)lista_ver_primero(lista) == 500);
+    print_test("El ultimo elemento de la lista es 700", *(int*)lista_ver_ultimo(lista) == 700);
+    print_test("la cantidad de elementos de la lista es 3", lista_largo(lista)  == 3);
+
+    lista_iter_t* iter_externo_b = lista_iter_crear(lista);
+
+    print_test("el valor actual del iterador es 500", *(int*)lista_iter_ver_actual(iter_externo_b) == 500);    
+    print_test("El primer elemento de la lista es 500", *(int*)lista_ver_primero(lista) == 500);
+    print_test("El ultimo elemento de la lista es 700", *(int*)lista_ver_ultimo(lista) == 700);
+    print_test("la cantidad de elementos de la lista es 3", lista_largo(lista)  == 3);
+    print_test("El iterador no se encuentra al final de la lista", !lista_iter_al_final(iter_externo_b));
+
+    lista_iter_avanzar(iter_externo_b);
+    print_test("el valor actual del iterador es 600", *(int*)lista_iter_ver_actual(iter_externo_b) == 600);    
+    print_test("El primer elemento de la lista es 500", *(int*)lista_ver_primero(lista) == 500);
+    print_test("El ultimo elemento de la lista es 700", *(int*)lista_ver_ultimo(lista) == 700);
+    print_test("la cantidad de elementos de la lista es 3", lista_largo(lista)  == 3);
+    print_test("El iterador no se encuentra al final de la lista", !lista_iter_al_final(iter_externo_b));
+
+    lista_iter_avanzar(iter_externo_b);
+    print_test("el valor actual del iterador es 700", *(int*)lista_iter_ver_actual(iter_externo_b) == 700);    
+    print_test("El primer elemento de la lista es 500", *(int*)lista_ver_primero(lista) == 500);
+    print_test("El ultimo elemento de la lista es 700", *(int*)lista_ver_ultimo(lista) == 700);
+    print_test("la cantidad de elementos de la lista es 3", lista_largo(lista)  == 3);
+    print_test("El iterador no se encuentra al final de la lista", !lista_iter_al_final(iter_externo_b));
+
+    lista_iter_avanzar(iter_externo_b);
+    print_test("el valor actual del iterador es NULL", lista_iter_ver_actual(iter_externo_b) == NULL);    
+    print_test("El primer elemento de la lista es 500", *(int*)lista_ver_primero(lista) == 500);
+    print_test("El ultimo elemento de la lista es 700", *(int*)lista_ver_ultimo(lista) == 700);
+    print_test("la cantidad de elementos de la lista es 3", lista_largo(lista)  == 3);
+    print_test("El iterador se encuentra al final de la lista", lista_iter_al_final(iter_externo_b));
+
+    int* elemento_d = malloc(sizeof(int));
+    *elemento_d = 800;
+
+    lista_iter_insertar(iter_externo_b, elemento_d);
+    print_test("el valor actual del iterador es 800", *(int*)lista_iter_ver_actual(iter_externo_b) == 800);    
+    print_test("El primer elemento de la lista es 500", *(int*)lista_ver_primero(lista) == 500);
+    print_test("El ultimo elemento de la lista es 800", *(int*)lista_ver_ultimo(lista) == 800);
+    print_test("la cantidad de elementos de la lista es 4", lista_largo(lista)  == 4);
+    print_test("El iterador no se encuentra al final de la lista", !lista_iter_al_final(iter_externo_b));
+
+    lista_iter_avanzar(iter_externo_b);
+    print_test("el valor actual del iterador es NULL", lista_iter_ver_actual(iter_externo_b) == NULL);    
+    print_test("El primer elemento de la lista es 500", *(int*)lista_ver_primero(lista) == 500);
+    print_test("El ultimo elemento de la lista es 800", *(int*)lista_ver_ultimo(lista) == 800);
+    print_test("la cantidad de elementos de la lista es 4", lista_largo(lista)  == 4);
+    print_test("El iterador se encuentra al final de la lista", lista_iter_al_final(iter_externo_b));
+
+    lista_iter_destruir(iter_externo_b);
     lista_destruir(lista, free);
 }
 
@@ -484,6 +599,7 @@ void pruebas_iterador_interno() {
 void pruebas_lista_alumno() {
     pruebas_iterador_externo();
     pruebas_dos_iteradores_externos();
+    prueba_dos_iteradores_externos_tipo_catedra();
     pruebas_iterador_interno();
     pruebas_lista_null();
     pruebas_crear_destruir_lista();
