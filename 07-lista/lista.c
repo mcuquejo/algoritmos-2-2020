@@ -41,8 +41,8 @@ lista_t *lista_crear(void) {
     if(!lista) {
         return NULL;
     }
-    lista->primero=NULL;
-    lista->ultimo=NULL;
+    lista->primero = NULL;
+    lista->ultimo = NULL;
     lista->largo = 0;
     return lista;
 }
@@ -54,8 +54,7 @@ bool lista_insertar_primero(lista_t *lista, void *dato) {
     nodo_t* nodo = crear_nodo(dato);
     if (!nodo) {
         return false;
-    }
-    
+    }    
     if (lista_esta_vacia(lista)) {
         lista->ultimo = nodo;
     } 
@@ -91,24 +90,18 @@ void *lista_borrar_primero(lista_t *lista) {
     lista->primero = auxiliar->proximo;
     if (!auxiliar->proximo) {
         lista->ultimo = NULL;
-    }
+    }     
     lista->largo--;
     free(auxiliar);        
     return dato;
 }
 
 void *lista_ver_primero(const lista_t *lista){
-    if (lista_esta_vacia(lista)) {
-        return NULL;
-    }
-    return lista->primero->dato;
+    return (lista_esta_vacia(lista)) ? NULL : lista->primero->dato;
 }
 
 void *lista_ver_ultimo(const lista_t* lista) {
-    if (lista_esta_vacia(lista)) {
-        return NULL;
-    }
-    return lista->ultimo->dato;
+    return (lista_esta_vacia(lista)) ? NULL : lista->ultimo->dato;
 }
 
 size_t lista_largo(const lista_t *lista) {
@@ -135,7 +128,7 @@ lista_iter_t *lista_iter_crear(lista_t *lista) {
     }
     iter->lista = lista;
     iter->anterior = NULL;
-    iter->actual = lista->primero;
+    iter->actual = iter->lista->primero;
     return iter;
 }
 
@@ -152,10 +145,7 @@ bool lista_iter_avanzar(lista_iter_t *iter) {
     return true;
 }
 void *lista_iter_ver_actual(const lista_iter_t *iter){
-    if (lista_esta_vacia(iter->lista) || lista_iter_al_final(iter)) {
-        return NULL;
-    }
-    return iter->actual->dato;
+    return (lista_iter_al_final(iter)) ? NULL : iter->actual->dato;
 }
 
 void lista_iter_destruir(lista_iter_t *iter) {
@@ -179,7 +169,7 @@ bool lista_iter_insertar(lista_iter_t *iter, void *dato){
         iter->lista->ultimo = nodo_nuevo;        
     } else {
         iter->anterior->proximo = nodo_nuevo;
-        nodo_nuevo->proximo = iter->actual->proximo;
+        nodo_nuevo->proximo = iter->actual;
     }
     iter->actual = nodo_nuevo;
     iter->lista->largo++;
