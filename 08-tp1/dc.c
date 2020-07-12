@@ -6,162 +6,210 @@
 #include <string.h>
 #define SIZE_OF_LONG 20
 
-bool suma(pila_t* pila_operaciones){    
-    char* b = pila_desapilar(pila_operaciones);    
-    char* a = pila_desapilar(pila_operaciones);    
-    char* b_copia = calloc(SIZE_OF_LONG, sizeof(char));   
-    printf("longitud de b_copia = %zu\n", strlen(b_copia));
-    char* a_copia = calloc(SIZE_OF_LONG, sizeof(char));
-    printf("longitud de a_copia = %zu\n", strlen(a_copia));
-    int* suma = malloc(sizeof(int));
-    if (!a || !b || !a_copia || !b_copia || !suma) {
+bool suma(pila_t* pila_operaciones) {
+    if (pila_largo(pila_operaciones) >= 2) {
+        long* resultado = malloc(sizeof(long));
+        if(resultado == NULL) {
+            return false;
+        }
+        long* b = pila_desapilar(pila_operaciones);
+        long* a = pila_desapilar(pila_operaciones);        
+        *resultado = *a + *b;
+        pila_apilar(pila_operaciones, resultado);
         free(a);
         free(b);
-        free(a_copia);
-        free(b_copia);
-        free(suma);
-        return false;
-    }
-    // strcpy(b_copia, b);
-    sprintf(b_copia, "%d", *b);
-    printf("longitud de b_copia = %zu\n", strlen(b_copia));
-    free(b);        
-    // strcpy(a_copia, a);
-    sprintf(a_copia, "%d", *a);
-    printf("longitud de a_copia = %zu\n", strlen(a_copia));
-    printf("longitud de a = %zu\n", strlen(a));
-    printf("a = %s\n", a);
-    printf("a = %i\n", *a);
-    free(a);    
-    *suma = (int)(*(long*)a_copia + *(long*)b_copia);
-    printf("resultado suma = %i\n", *suma);
-    pila_apilar(pila_operaciones, suma);
-    free(a_copia);
-    free(b_copia);
-    return true;
-}
-
-bool resta(pila_t* pila_operaciones){    
-    char* b = pila_desapilar(pila_operaciones);    
-    char* a = pila_desapilar(pila_operaciones);    
-    char* b_copia = calloc(SIZE_OF_LONG, sizeof(char));
-    char* a_copia = calloc(SIZE_OF_LONG, sizeof(char));
-    int* resta = malloc(sizeof(int));
-    if (!a || !b || !a_copia || !b_copia || !resta) {
-        free(a);
-        free(b);
-        free(a_copia);
-        free(b_copia);
-        free(resta);
-        return false;
-    }
-    strcpy(b_copia, b);
-    free(b);    
-    strcpy(a_copia, a);
-    free(a);    
-    *resta = (int)(*(long*)a_copia - *(long*)b_copia);
-    pila_apilar(pila_operaciones, resta);
-    free(a_copia);
-    free(b_copia);
-    return true;
-}
-
-bool multiplicacion(pila_t* pila_operaciones){    
-    char* b = pila_desapilar(pila_operaciones);    
-    char* a = pila_desapilar(pila_operaciones);    
-    char* b_copia = calloc(SIZE_OF_LONG, sizeof(char));
-    char* a_copia = calloc(SIZE_OF_LONG, sizeof(char));
-    int* multiplicacion = malloc(sizeof(int));
-    if (!a || !b || !a_copia || !b_copia || !multiplicacion) {
-        free(a);
-        free(b);
-        free(a_copia);
-        free(b_copia);
-        free(multiplicacion);
-        return false;
-    }
-    strcpy(b_copia, b);
-    free(b);    
-    strcpy(a_copia, a);
-    free(a);    
-    *multiplicacion = (int)(*(long*)a_copia * *(long*)b_copia);
-    pila_apilar(pila_operaciones, multiplicacion);
-    free(a_copia);
-    free(b_copia);
-    return true;
-}
-
-bool division(pila_t* pila_operaciones){    
-    char* b = pila_desapilar(pila_operaciones);    
-    char* a = pila_desapilar(pila_operaciones);    
-    char* b_copia = calloc(SIZE_OF_LONG, sizeof(char));
-    char* a_copia = calloc(SIZE_OF_LONG, sizeof(char));
-    int* division = malloc(sizeof(int));
-    if (!a || !b || !a_copia || !b_copia || !division) {
-        free(a);
-        free(b);
-        free(a_copia);
-        free(b_copia);
-        free(division);
-        return false;
-    }
-    strcpy(b_copia, b);
-    free(b);    
-    strcpy(a_copia, a);
-    free(a);
-    if (*b_copia != 0) {    
-        *division = (int)(*(long*)a_copia / *(long*)b_copia);
-        pila_apilar(pila_operaciones, division);
-        free(a_copia);
-        free(b_copia);
     } else {
-        free(a);
-        free(b);
-        free(a_copia);
-        free(b_copia);
-        free(division);
         return false;
     }
     return true;
 }
 
-long calcular_potencia(long base, long exponente) {    
+bool resta(pila_t* pila_operaciones) {
+    if (pila_largo(pila_operaciones) >= 2) {
+        long* resultado = malloc(sizeof(long));
+        if(resultado == NULL) {
+            return false;
+        }
+        long* b = pila_desapilar(pila_operaciones);
+        long* a = pila_desapilar(pila_operaciones);        
+        *resultado = *a - *b;
+        pila_apilar(pila_operaciones, resultado);
+        free(a);
+        free(b);
+    } else {
+        return false;
+    }
+    return true;
+}
+
+long calcular_potencia(long base, long exponente) {
     if (exponente == 0) {
         return 1;
     } else {
         long resultado = calcular_potencia(base * base, exponente / 2);
-        if (exponente % 2 == 1) {            
+        if (exponente % 2 == 1) {
             resultado = base * resultado;
         }
         return resultado;
     }
 }
 
-bool potencia(pila_t* pila_operaciones){    
-    char* b = pila_desapilar(pila_operaciones);    
-    char* a = pila_desapilar(pila_operaciones);    
-    char* b_copia = calloc(SIZE_OF_LONG, sizeof(char));
-    char* a_copia = calloc(SIZE_OF_LONG, sizeof(char));
-    int* potencia = malloc(sizeof(int));
-    if (!a || !b || !a_copia || !b_copia || !potencia) {
-        printf("entro aca\n");
-        free(a);
-        free(b);
-        free(a_copia);
-        free(b_copia);
-        free(potencia);
+bool potencia(pila_t* pila_operaciones) {
+    if (pila_largo(pila_operaciones) >= 2) {
+        long* resultado = malloc(sizeof(long));
+        if(resultado == NULL) {
+            return false;
+        }
+        long* exponente = pila_desapilar(pila_operaciones);
+        long* base = pila_desapilar(pila_operaciones);        
+        if (*exponente >= 0) {
+            *resultado = calcular_potencia(*(long*)base, *(long*)exponente);
+            pila_apilar(pila_operaciones, resultado);
+            free(base);
+            free(exponente);
+        } else {
+            free(base);
+            free(exponente);
+            free(resultado);
+            return false;
+        }
+    } else {
         return false;
     }
-    strcpy(b_copia, b);
-    free(b);    
-    strcpy(a_copia, a);
-    free(a);
-    printf("%s\n", b_copia);
-    printf("%f\n", atof(a_copia));
-    *potencia = (int)calcular_potencia(*(long*)(a_copia), *(long*)(b_copia));
-    pila_apilar(pila_operaciones, potencia);
-    free(a_copia);
-    free(b_copia);
+    return true;
+}
+
+long calcular_raiz(long radicando, long inicio, long fin) {
+    if ( inicio > fin) {
+        return inicio - 1;
+    }
+    long medio = (inicio + fin) / 2;
+    if (medio * medio == radicando || (medio * medio) + 1 == radicando) {
+        return medio;
+    }
+    if (medio * medio > radicando) {        
+        return calcular_raiz(radicando, inicio, medio - 1);
+    } else {
+        return calcular_raiz(radicando, medio + 1, fin);
+    }
+}
+
+bool raiz(pila_t* pila_operaciones) {
+    if (pila_largo(pila_operaciones) >= 1) {
+        long* resultado = malloc(sizeof(long));
+        if(resultado == NULL) {
+            return false;
+        }
+        long* radicando = pila_desapilar(pila_operaciones);
+        if (*radicando >= 0) {
+            *resultado = calcular_raiz(*radicando, 1, *radicando);
+            pila_apilar(pila_operaciones, resultado);
+            free(radicando);
+        } else {
+            free(radicando);
+            free(resultado);
+            return false;
+        }
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool division(pila_t* pila_operaciones) {
+    if (pila_largo(pila_operaciones) >= 2) {
+        long* resultado = malloc(sizeof(long));
+        if(resultado == NULL) {
+            return false;
+        }        
+        long* divisor = pila_desapilar(pila_operaciones);        
+        long* dividendo = pila_desapilar(pila_operaciones);        
+        if (*divisor != 0) {
+            *resultado = *dividendo / *divisor;
+            pila_apilar(pila_operaciones, resultado);
+            free(dividendo);
+            free(divisor);
+        } else {
+            free(dividendo);
+            free(divisor);
+            free(resultado);
+            return false;
+        }
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool multiplicacion(pila_t* pila_operaciones) {
+    if (pila_largo(pila_operaciones) >= 2) {
+        long* resultado = malloc(sizeof(long));
+        if(resultado == NULL) {
+            return false;
+        }
+        long* multipicador = pila_desapilar(pila_operaciones);
+        long* multiplicando = pila_desapilar(pila_operaciones);        
+        *resultado = *multiplicando * *multipicador;
+        pila_apilar(pila_operaciones, resultado);
+        free(multiplicando);
+        free(multipicador);
+    } else {
+        return false;
+    }
+    return true;
+}
+
+long calcular_logaritmo(long base, long valor) {
+    if (valor == 1 || valor < base) {
+        return 0;
+    }
+    return calcular_logaritmo(base, valor / base) + 1;
+}
+
+bool logaritmo(pila_t* pila_operaciones) {
+    if (pila_largo(pila_operaciones) >= 2) {
+        long* resultado = malloc(sizeof(long));
+        if(resultado == NULL) {
+            return false;
+        }
+        long* base = pila_desapilar(pila_operaciones);
+        long* valor = pila_desapilar(pila_operaciones);        
+        if (*base > 1) {
+            *resultado = calcular_logaritmo(*base, *valor);
+            pila_apilar(pila_operaciones, resultado);
+            free(valor);
+            free(base);
+        } else {
+            free(valor);
+            free(base);
+            free(resultado);
+            return false;
+        }
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool ternario(pila_t* pila_operaciones) {
+    if (pila_largo(pila_operaciones) >= 3) {
+        long* resultado = malloc(sizeof(long));
+        if(resultado == NULL) {
+            return false;
+        }
+        long* valor_si_falso = pila_desapilar(pila_operaciones);
+        long* valor_si_verdadero = pila_desapilar(pila_operaciones);        
+        long* comparacion = pila_desapilar(pila_operaciones);
+
+        *resultado = *comparacion != 0 ? *valor_si_verdadero : *valor_si_falso;
+        pila_apilar(pila_operaciones, resultado);
+        free(comparacion);
+        free(valor_si_verdadero);
+        free(valor_si_falso);
+
+    } else {
+        return false;
+    }
     return true;
 }
 
@@ -174,7 +222,7 @@ bool es_numero(char* cadena) {
 
 void free_pila(pila_t* pila_operaciones) {
     while (pila_largo(pila_operaciones) > 1) {
-        int* valor = pila_desapilar(pila_operaciones);        
+        long* valor = pila_desapilar(pila_operaciones);        
         free(valor);
     }
 }
@@ -202,10 +250,10 @@ char* formatear_operacion(char* operacion) {
     return operacion_final;
 }
 
-void imprimir_resultado(bool resultado_ok, int valor) {
+void imprimir_resultado(bool resultado_ok, long* valor) {
     if (resultado_ok) {            
             if(valor) {
-                fprintf(stdout, "%d\n", valor);
+                fprintf(stdout, "%ld\n", *(long*)valor);
             } else {
                 fprintf(stdout, "\n");
             }
@@ -214,7 +262,7 @@ void imprimir_resultado(bool resultado_ok, int valor) {
             fprintf(stdout, "ERROR\n");
         }
 }
-int calculadora_polaca() {
+long calculadora_polaca() {
     pila_t* pila_operaciones = pila_crear();
     if (!pila_operaciones) {
         return 1;
@@ -231,7 +279,7 @@ int calculadora_polaca() {
         while(lista_operaciones[i_lista_operaciones] && resultado_ok) {            
             char* operacion = formatear_operacion(lista_operaciones[i_lista_operaciones]);
             if (es_numero(operacion)) {
-                int* numero = malloc(sizeof(int));
+                long* numero = malloc(sizeof(long));
                 if(numero == NULL) {
                     fprintf(stdout, "ERROR\n");
                     return 1;
@@ -248,7 +296,14 @@ int calculadora_polaca() {
                 resultado_ok = division(pila_operaciones);
             } else if (strcmp(operacion, "^") == 0) {                      
                 resultado_ok = potencia(pila_operaciones);       
-            }     
+            }  else if (strcmp(operacion, "?") == 0) {                      
+                resultado_ok = ternario(pila_operaciones);       
+            } else if (strcmp(operacion, "sqrt") == 0) {                      
+                resultado_ok = raiz(pila_operaciones);       
+            } else if (strcmp(operacion, "log") == 0) {                      
+                resultado_ok = logaritmo(pila_operaciones);       
+            }
+                
             i_lista_operaciones++;                        
             free(operacion);
         }
@@ -257,9 +312,9 @@ int calculadora_polaca() {
             resultado_ok = false;
             free_pila(pila_operaciones);
         }        
-        int* valor = pila_desapilar(pila_operaciones);        
+        long* valor = pila_desapilar(pila_operaciones);        
         
-        imprimir_resultado(resultado_ok, *valor);
+        imprimir_resultado(resultado_ok, valor);
         
         free(valor);
         
