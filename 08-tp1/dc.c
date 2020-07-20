@@ -321,3 +321,7 @@ long calculadora_polaca() {
     free(linea);
     return 0;
 }
+int main(void) {    
+    calculadora_polaca();
+    return 0;
+}
