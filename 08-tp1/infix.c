@@ -134,14 +134,25 @@ bool procesar_operacion(operacion_t* operacion, pila_t* pila_operaciones, cola_t
                 contador++;
             }
         }
-        if ((operador_en_pila->precedencia > operacion->precedencia && strcmp(operador_en_pila->operacion, "(") != 0 && strcmp(operador_en_pila->operacion, ")") != 0) || (operador_en_pila->precedencia == operacion->precedencia && operacion->asociativo_izquierda)) {                        
-            operacion_t* operador_salida = pila_desapilar(pila_operaciones);
-            char* salida = malloc(sizeof(operador_salida->operacion) + 1);
-            strcpy(salida,operador_salida->operacion);
-            cola_encolar(cola_salida, salida);
-            free(operador_salida->operacion);
-            free(operador_salida);
+        bool continuar = true;
+        while (continuar && !pila_esta_vacia(pila_operaciones)) {
+            if ((operador_en_pila->precedencia > operacion->precedencia && strcmp(operador_en_pila->operacion, "(") != 0 && strcmp(operador_en_pila->operacion, ")") != 0) || (operador_en_pila->precedencia == operacion->precedencia && operacion->asociativo_izquierda)) {                        
+                operacion_t* operador_salida = pila_desapilar(pila_operaciones);
+                char* salida = strdup(operador_salida->operacion);
+                if (!salida) {
+                    free(operador_salida->operacion);
+                    free(operador_salida);
+                    return false;
+                }
+                cola_encolar(cola_salida, salida);
+                free(operador_salida->operacion);
+                free(operador_salida);
+                operador_en_pila = pila_ver_tope(pila_operaciones);
+            } else {
+                continuar = false;
+            }
         }
+        
         pila_apilar(pila_operaciones, operacion);
     }
     return true;
