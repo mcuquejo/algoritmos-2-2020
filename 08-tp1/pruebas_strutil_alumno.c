@@ -9,6 +9,9 @@
  *                   PRUEBAS UNITARIAS ALUMNO
  * *****************************************************************/
 void pruebas_substr() {
+    char* str0 = substr("Hola mundo", 0);
+    print_test("Substring de \'Hola mundo\' de 0 es igual a \'\'", strcmp(str0, "") == 0);
+
     char* str1 = substr("Hola mundo", 6);
     print_test("Substring de \'Hola mundo\' de 6 es igual a \'Hola m\'", strcmp(str1, "Hola m") == 0);
     
