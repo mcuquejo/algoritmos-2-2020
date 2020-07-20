@@ -16,7 +16,7 @@ typedef struct operacion {
 } operacion_t;
 
 bool es_numero(char* cadena) {
-    return((atoi(cadena) == 0 && strcmp(cadena,"0") == 0) || (atoi(cadena) != 0));    
+    return((atol(cadena) == 0 && strcmp(cadena,"0") == 0) || (atol(cadena) != 0));    
 }
 
 char* formatear_operacion(char* operacion) {
@@ -29,14 +29,13 @@ char* formatear_operacion(char* operacion) {
         free_strv(lista_operaciones_rec);
         return NULL;
     }
-    char* operacion_final = malloc(sizeof(strlen(lista_operaciones_rec_2[0])));
-    if (!operacion_final) {        
+    
+    char* operacion_final = strdup(lista_operaciones_rec_2[0]);
+     if (!operacion_final) {        
         free_strv(lista_operaciones_rec);
         free_strv(lista_operaciones_rec_2);
         return NULL;
     }
-
-    strcpy(operacion_final, lista_operaciones_rec_2[0]);    
     free_strv(lista_operaciones_rec);
     free_strv(lista_operaciones_rec_2);
     return operacion_final;
@@ -58,8 +57,12 @@ void imprimir_resultado_formateado(bool resultado_ok, char* valor) {
 void liberar_pila(pila_t* pila_operaciones, cola_t* cola_salida) {
     while (!pila_esta_vacia(pila_operaciones)) {
         operacion_t* operador_salida = pila_desapilar(pila_operaciones);
-        char* salida = malloc(sizeof(char) + 1);
-        strcpy(salida,operador_salida->operacion);
+        char* salida = strdup(operador_salida->operacion);
+        if (!salida) {
+            free(operador_salida->operacion);
+            free(operador_salida);
+            return;
+        }
         cola_encolar(cola_salida, salida);
         free(operador_salida->operacion);
         free(operador_salida);
@@ -133,7 +136,7 @@ bool procesar_operacion(operacion_t* operacion, pila_t* pila_operaciones, cola_t
         }
         if ((operador_en_pila->precedencia > operacion->precedencia && strcmp(operador_en_pila->operacion, "(") != 0 && strcmp(operador_en_pila->operacion, ")") != 0) || (operador_en_pila->precedencia == operacion->precedencia && operacion->asociativo_izquierda)) {                        
             operacion_t* operador_salida = pila_desapilar(pila_operaciones);
-            char* salida = malloc(sizeof(char) + 1);
+            char* salida = malloc(sizeof(operador_salida->operacion) + 1);
             strcpy(salida,operador_salida->operacion);
             cola_encolar(cola_salida, salida);
             free(operador_salida->operacion);
@@ -167,7 +170,7 @@ size_t contar_coincidencias_infix(const char* str) {
 
 char **split_infix(const char *str) {
     size_t total_coincidencias = contar_coincidencias_infix(str);
-    char** split = malloc(sizeof(str) * total_coincidencias);
+    char** split = malloc(sizeof(strlen(str)) * total_coincidencias + 1);
     if (!split) {
         return NULL;    
     }
@@ -239,9 +242,8 @@ long infix() {
                 char* operacion;
                 if (strlen(lista_operaciones[i_lista_operaciones]) > 1) {                    
                     operacion = formatear_operacion(lista_operaciones[i_lista_operaciones]);
-                } else {
-                    operacion = malloc(sizeof(strlen(lista_operaciones[i_lista_operaciones])));
-                    strcpy(operacion, lista_operaciones[i_lista_operaciones]);
+                } else {                    
+                    operacion = strdup(lista_operaciones[i_lista_operaciones]);
                 }
                 if (es_numero(operacion)) {
                     char* numero = malloc(strlen(operacion) + 1);
