@@ -4,7 +4,6 @@
 #include "pila.h"
 #include "strutil.h"
 #include <string.h>
-#define SIZE_OF_LONG 20
 
 bool suma(pila_t* pila_operaciones) {
     if (pila_largo(pila_operaciones) >= 2) {
@@ -214,10 +213,7 @@ bool ternario(pila_t* pila_operaciones) {
 }
 
 bool es_numero(char* cadena) {
-    if((atoi(cadena) == 0 && strcmp(cadena,"0") == 0) || (atoi(cadena) != 0)) {
-        return true;
-    }
-    return false;    
+    return((atoi(cadena) == 0 && strcmp(cadena,"0") == 0) || (atoi(cadena) != 0));    
 }
 
 void free_pila(pila_t* pila_operaciones) {
@@ -231,14 +227,14 @@ char* formatear_operacion(char* operacion) {
     char** lista_operaciones_rec = split(operacion, '\0');
     if (!lista_operaciones_rec) {
         return NULL;
-    }
-    char** lista_operaciones_rec_2 = split(lista_operaciones_rec[0], '\n');
+    }    
+    char** lista_operaciones_rec_2 = split(lista_operaciones_rec[0], '\n');    
     if (!lista_operaciones_rec_2) {
         free_strv(lista_operaciones_rec);
         return NULL;
     }
     char* operacion_final = malloc(sizeof(strlen(lista_operaciones_rec_2[0])));
-    if (!operacion_final) {
+    if (!operacion_final) {        
         free_strv(lista_operaciones_rec);
         free_strv(lista_operaciones_rec_2);
         return NULL;
@@ -246,7 +242,7 @@ char* formatear_operacion(char* operacion) {
 
     strcpy(operacion_final, lista_operaciones_rec_2[0]);    
     free_strv(lista_operaciones_rec);
-    free_strv(lista_operaciones_rec_2);    
+    free_strv(lista_operaciones_rec_2);
     return operacion_final;
 }
 
