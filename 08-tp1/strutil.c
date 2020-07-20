@@ -36,8 +36,8 @@ char **split(const char *str, char sep) {
         if(str[i] == sep) {                        
             total_coincidencias++;
         }
-    }
-    char** split = malloc(sizeof(str) * total_coincidencias);
+    }    
+    char** split = malloc(sizeof(strlen(str) + 1) * total_coincidencias);
     if (!split) {
         return NULL;    
     }
