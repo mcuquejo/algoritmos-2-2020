@@ -93,7 +93,7 @@ char *join(char **strv, char sep) {
     size_t pos_arreglo = 0;
     size_t pos_strv = 0;
     while (strv[pos_arreglo]) {
-        strncpy(joined_strv + pos_strv, strv[pos_arreglo], strlen(strv[pos_arreglo]));
+        strcpy(joined_strv + pos_strv, strv[pos_arreglo]);
 
         pos_strv += strlen(strv[pos_arreglo]);
         if (cant_separadores > 0 && sep != '\0') {
