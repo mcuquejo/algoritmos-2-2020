@@ -4,7 +4,6 @@
 #include "pila.h"
 #include "cola.h"
 #include "strutil.h"
-#include "dc.h"
 #include <string.h>
 #define CANT_MIN_ARREGLO_SPLIT 2;
 
@@ -15,6 +14,33 @@ typedef struct operacion {
     size_t precedencia;
     bool asociativo_izquierda;
 } operacion_t;
+
+bool es_numero(char* cadena) {
+    return((atoi(cadena) == 0 && strcmp(cadena,"0") == 0) || (atoi(cadena) != 0));    
+}
+
+char* formatear_operacion(char* operacion) {
+    char** lista_operaciones_rec = split(operacion, '\0');
+    if (!lista_operaciones_rec) {
+        return NULL;
+    }    
+    char** lista_operaciones_rec_2 = split(lista_operaciones_rec[0], '\n');    
+    if (!lista_operaciones_rec_2) {
+        free_strv(lista_operaciones_rec);
+        return NULL;
+    }
+    char* operacion_final = malloc(sizeof(strlen(lista_operaciones_rec_2[0])));
+    if (!operacion_final) {        
+        free_strv(lista_operaciones_rec);
+        free_strv(lista_operaciones_rec_2);
+        return NULL;
+    }
+
+    strcpy(operacion_final, lista_operaciones_rec_2[0]);    
+    free_strv(lista_operaciones_rec);
+    free_strv(lista_operaciones_rec_2);
+    return operacion_final;
+}
 
 void imprimir_resultado_formateado(bool resultado_ok, char* valor) {
     if (resultado_ok) {            
@@ -28,10 +54,6 @@ void imprimir_resultado_formateado(bool resultado_ok, char* valor) {
             fprintf(stdout, "ERROR\n");
         }
 }
-
-// bool es_numero(char* cadena) {
-//     return ((atoi(cadena) == 0 && strcmp(cadena,"0") == 0) || (atoi(cadena) != 0));    
-// }
 
 void liberar_pila(pila_t* pila_operaciones, cola_t* cola_salida) {
     while (!pila_esta_vacia(pila_operaciones)) {
@@ -82,32 +104,22 @@ bool procesar_operacion(operacion_t* operacion, pila_t* pila_operaciones, cola_t
     if (pila_esta_vacia(pila_operaciones)) {        
         pila_apilar(pila_operaciones, operacion);
     } else {
-        operacion_t* operador_en_pila = pila_ver_tope(pila_operaciones);
-        // fprintf(stdout, "operador precedencia: %zu\n", operador_en_pila->precedencia);
-        if (operacion->precedencia == CIERRE_PARENTESIS) {
-            
+        operacion_t* operador_en_pila = pila_ver_tope(pila_operaciones);        
+        if (operacion->precedencia == CIERRE_PARENTESIS) {            
             bool error_balanceo = false;
             size_t contador = 0;
             while (!pila_esta_vacia(pila_operaciones) && !error_balanceo) { 
-                // printf("loop nro: %zu\n", contador);
-                // printf("entro aca %s\n", operacion->operacion);
                 operacion_t* operador_salida = pila_desapilar(pila_operaciones);
-                // printf("este es el operador que saco de la pila %s\n", operador_salida->operacion);
                 if (operador_salida->precedencia == APER_PARENTESIS ) {
-                    // printf("por algun motivo entra aca? %s\n", operador_salida->operacion);
                     free(operador_salida->operacion);
                     free(operador_salida);                    
                     return true;
                 } 
-                //operacion_t* operacion_prueba = pila_ver_tope(pila_operaciones);
-                // printf("me fijo tope de la pila dentro del loop despues de sacar el -: %s\n", operacion_prueba->operacion);
                 if (pila_esta_vacia(pila_operaciones)) {
-                    // printf("la pila se vacio y no encontré el parentesis\n");
                     free(operador_salida->operacion);
                     free(operador_salida);
                     return false;    
                 }
-                // printf("voy encolando lo que saco de la pila %s\n", operador_salida->operacion);
                 char* salida = malloc(sizeof(char) + 1);
                 strcpy(salida,operador_salida->operacion);
                 
@@ -129,13 +141,10 @@ bool procesar_operacion(operacion_t* operacion, pila_t* pila_operaciones, cola_t
         }
         pila_apilar(pila_operaciones, operacion);
     }
-    //operacion_t* operacion_prueba = pila_ver_tope(pila_operaciones);
-    // printf("tope de la pila al final del proceso: %s\n", operacion_prueba->operacion);
     return true;
 }
 
 bool es_operador(const char str) {
-    // str == '\0' || str == '\n' || 
     return (str == ' ' || str == '+' || str == '-' || str == '*' || str == '/' || str == '^' || str == '?' || str == '(' || str == ')'); 
 }
 
@@ -143,30 +152,21 @@ size_t contar_coincidencias_infix(const char* str) {
     size_t total_coincidencias = 2;
     size_t ultima_coincidencia = 0;
     for (size_t i = 0; i <= strlen(str); i++) {
-        // printf("----------INICIO CICLO--------------\n");
-        // printf("str[i] = \'%c\'\n", str[i]);
         if(es_operador(str[i]) || str[i] == '\0') {
-            // printf("str[i] = \'%c\' cuenta como operador\n", str[i]);            
-            //no voy a agregar una posicion en el array para el \0
-            //UPDATE: al final tenia que agregarlo.            
-            total_coincidencias++;                
-            
+            total_coincidencias++;            
             //esto es para verificar que se agreguen posiciones para los numeros entre los operadores.
             //No agrega nada si entre el operador actual y el anterior encontrado no habia espacios.
-            if (i - ultima_coincidencia > 1) {     
-                // printf("str[i] = \'%c\' se suma posicion porque habia espacio\n", str[i]);
+            if (i - ultima_coincidencia > 1) {
                 total_coincidencias++;
             }
             ultima_coincidencia = i;
         }
-    // printf("----------FIN CICLO--------------\n\n\n");
     }    
     return total_coincidencias;
 }
 
 char **split_infix(const char *str) {
-    size_t total_coincidencias = contar_coincidencias_infix(str);    //15
-    // printf("total coincidencias: %zu\n", total_coincidencias);
+    size_t total_coincidencias = contar_coincidencias_infix(str);
     char** split = malloc(sizeof(str) * total_coincidencias);
     if (!split) {
         return NULL;    
@@ -175,8 +175,7 @@ char **split_infix(const char *str) {
     size_t pos_split = 0;
     size_t pos_str = 0;
     for (size_t i = 0; i <= strlen(str); i++) {
-        if(es_operador(str[i])) {    
-            // printf("posicion del string donde estoy parado ahora = %zu, valor str[i] = %c, posicion del arreglo en donde va a insertar: %zu\n", i, str[i], pos_split);
+        if(es_operador(str[i])) {
             if (i == 0) {
                 split[pos_split] = substr(str, 1);                
                 if (pos_str < strlen(str)) {
@@ -184,20 +183,15 @@ char **split_infix(const char *str) {
                 }
             } else if (i < strlen(str) - 1) { 
                 if (i - pos_str - 1 == 0) {
-                    // printf("A entra aca con pos_string = %zu\n", pos_str);
                     split[pos_split] = substr(str + pos_str, 1);
-                    // printf("A al entrar aca, guarde la posicion anterior: split[pos_split] = \'%s\'\n", split[pos_split]);
                     pos_split++;
                 } else {
                     if(i != pos_str) {
-                        // printf("B entra aca con pos_string = %zu\n", pos_str);
-                        split[pos_split] = substr(str + pos_str, i - pos_str);                    
-                        // printf("B al entrar aca, guarde la posicion anterior?: split[pos_split] = \'%s\'\n", split[pos_split]);
+                        split[pos_split] = substr(str + pos_str, i - pos_str);
                         pos_split++;
                     }                    
                 }                                               
                 split[pos_split] = substr(str + i, 1);
-                // printf("Ahora si, guarde la posicion actual: split[pos_split] = \'%s\'\n", split[pos_split]);
                 
                 if (pos_str < strlen(str)) {
                     pos_str = i + 1;
@@ -209,16 +203,12 @@ char **split_infix(const char *str) {
                 pos_split++;
             } 
         } else if (str[i] == '\0') {
-            // printf("entra a guardar lo que esta detras del \\0\n");
-            // printf("cuanto vale pos_split??? %zu\n", pos_split);
             split[pos_split] = substr(str + pos_str, i - pos_str);
             if (pos_split < total_coincidencias - 1) {
-                // printf("luego de guardar lo ultimo, sumo una posicion en el split, para que quede null\n");
                 pos_split++;
             }
         }
     }
-    // printf("esto es lo que está pisando el NULL en split[pos_split] = %s\n", split[pos_split]);
     split[pos_split] = NULL;
     return split;
 }
@@ -245,18 +235,14 @@ long infix() {
         
         size_t i_lista_operaciones = 0;
         while (lista_operaciones[i_lista_operaciones] && resultado_ok) {
-            // fprintf(stdout, "%s %zu\n", lista_operaciones[i_lista_operaciones], strlen(lista_operaciones[i_lista_operaciones]) );
             if (strlen(lista_operaciones[i_lista_operaciones]) > 0) {
                 char* operacion;
                 if (strlen(lista_operaciones[i_lista_operaciones]) > 1) {                    
                     operacion = formatear_operacion(lista_operaciones[i_lista_operaciones]);
-                    printf("operacion formateada: \'%s\'\n", operacion);                    
                 } else {
                     operacion = malloc(sizeof(strlen(lista_operaciones[i_lista_operaciones])));
                     strcpy(operacion, lista_operaciones[i_lista_operaciones]);
-                    // operacion = lista_operaciones[i_lista_operaciones];
                 }
-                // fprintf(stdout, "%s %zu\n", operacion, strlen(operacion) );
                 if (es_numero(operacion)) {
                     char* numero = malloc(strlen(operacion) + 1);
                     if(!numero) {
@@ -339,8 +325,7 @@ long infix() {
                     } else {
                         resultado_ok = procesar_operacion(operador_logaritmo, pila_operaciones, cola_salida);
                     }
-                } else if (strcmp(operacion, "(") == 0) { 
-                    // printf("guardo la apertura de parentesis\n");
+                } else if (strcmp(operacion, "(") == 0) {
                     operacion_t* operador_apertura = crear_operador(operacion, APER_PARENTESIS, true);
                     if (!operador_apertura) {
                         free(operacion);
@@ -359,7 +344,6 @@ long infix() {
                         resultado_ok = procesar_operacion(operador_cierre, pila_operaciones, cola_salida);
                     }
                 } else {
-                    printf("este operador no entro por ningun lado: \'%s\'\n",operacion);
                     free(operacion);
                 }
                 
@@ -370,20 +354,20 @@ long infix() {
         liberar_pila(pila_operaciones, cola_salida);
             
         while(!cola_esta_vacia(cola_salida)) {            
-            void* valor = cola_desencolar(cola_salida);
-            //fprintf(stdout, "%s ", (char*)valor);            
+            void* valor = cola_desencolar(cola_salida);        
             imprimir_resultado_formateado(resultado_ok, valor);
             free(valor);
         }
         fprintf(stdout, "\n");
-        printf("destruyo lista operaciones\n");
         free_strv(lista_operaciones);                            
     }
-    
-    printf("destruyo pila operaciones\n");    
     pila_destruir(pila_operaciones);
-    printf("destruyo cola salida\n");
     cola_destruir(cola_salida, free);
     free(linea);
+    return 0;
+}
+
+int main(void) {    
+    infix();
     return 0;
 }
