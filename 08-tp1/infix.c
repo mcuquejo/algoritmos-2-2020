@@ -47,14 +47,9 @@ void imprimir_resultado_formateado(bool resultado_ok, char* valor) {
                 fprintf(stdout, "%s ", valor);
             } else {
                 fprintf(stdout, "\n");
-            }
-            
-        } else {
-            if(valor) {                
-                fprintf(stdout, " ERROR \'%s\' ", valor);
-            } else {
-                fprintf(stdout, "ERROR \'no habia nada\' ");
             }            
+        } else {
+            fprintf(stdout, "ERROR ");            
         }
 }
 
@@ -107,40 +102,30 @@ operacion_t* crear_operador(char* operador, size_t precedencia, bool asociativo_
     return operacion;
 }
 
-bool procesar_operacion(operacion_t* operacion, pila_t* pila_operaciones, cola_t* cola_salida) {   
-    // printf("veo el valor ingresado en la cola salida (antes de procesar nada): %s\n", (char*)cola_ver_primero(cola_salida));     
-    if (pila_esta_vacia(pila_operaciones)) {
-        // printf("operacion apilada cuando la pila está vacia: %s\n", operacion->operacion);
+bool procesar_operacion(operacion_t* operacion, pila_t* pila_operaciones, cola_t* cola_salida) {
+    if (pila_esta_vacia(pila_operaciones)) {        
         pila_apilar(pila_operaciones, operacion);
     } else {
         operacion_t* operador_en_pila = pila_ver_tope(pila_operaciones);        
         if (operacion->precedencia == CIERRE_PARENTESIS) {            
             bool error_balanceo = false;
             size_t contador = 0;
-            while (!pila_esta_vacia(pila_operaciones) && !error_balanceo) { 
-                // printf("veo el valor ingresado en la cola salida: %s\n", (char*)cola_ver_primero(cola_salida));
-                // printf("Comparo operador en pila antes de desapilar: %s\n", operador_en_pila->operacion);
+            while (!pila_esta_vacia(pila_operaciones) && !error_balanceo) {
                 operacion_t* operador_salida = pila_desapilar(pila_operaciones);                
                 operador_en_pila = pila_ver_tope(pila_operaciones);
-                // printf("Comparo operador en pila despues de desapilar: %s\n", operador_en_pila->operacion);
-                // printf("Contra operador salida. Deberían ser el mismo valor: %s\n", operador_salida->operacion);                
-                if (operador_salida->precedencia == APER_PARENTESIS ) {
-                    // printf("Aca deberia entrar solo una vez con valor: %s\n", operador_salida->operacion);
-                    // printf("pila esta vacia? %i\n",pila_esta_vacia(pila_operaciones));
+                if (operador_salida->precedencia == APER_PARENTESIS ) {                    
                     free(operador_salida->operacion);
                     free(operador_salida);                          
                     return true;
                 } 
                 if (pila_esta_vacia(pila_operaciones)) {
-                    // printf("entra aca? si es asi con que valor? %s\n", operador_salida->operacion);
                     free(operador_salida->operacion);
                     free(operador_salida);
                     free(operacion->operacion);
                     free(operacion);
                     return false;    
                 }
-                char* salida = strdup(operador_salida->operacion);
-                // printf("salida que encola al buscar una apertura de parentesis: %s\n", salida);
+                char* salida = strdup(operador_salida->operacion);                
                 cola_encolar(cola_salida, salida); 
                 free(operador_salida->operacion);               
                 free(operador_salida);
@@ -153,8 +138,7 @@ bool procesar_operacion(operacion_t* operacion, pila_t* pila_operaciones, cola_t
         }
         bool continuar = true;
         while (continuar && !pila_esta_vacia(pila_operaciones)) {
-            if (((operador_en_pila->precedencia > operacion->precedencia) || (operador_en_pila->precedencia == operacion->precedencia && operacion->asociativo_izquierda)) && (!strcmp(operador_en_pila->operacion, "(") == 0 && !strcmp(operador_en_pila->operacion, ")") == 0)) {                        
-                // printf("estoy comparando operador en pila: %s vs operacion que pase como parametro: %s\n", operador_en_pila->operacion, operacion->operacion);
+            if (((operador_en_pila->precedencia > operacion->precedencia) || (operador_en_pila->precedencia == operacion->precedencia && operacion->asociativo_izquierda)) && (!strcmp(operador_en_pila->operacion, "(") == 0 && !strcmp(operador_en_pila->operacion, ")") == 0)) {                                        
                 operacion_t* operador_salida = pila_desapilar(pila_operaciones);
                 char* salida = strdup(operador_salida->operacion);
                 if (!salida) {
@@ -169,9 +153,7 @@ bool procesar_operacion(operacion_t* operacion, pila_t* pila_operaciones, cola_t
             } else {
                 continuar = false;
             }
-        }
-        
-        // printf("Operacion que al final apila en pila operaciones: %s\n", operacion->operacion);
+        }        
         pila_apilar(pila_operaciones, operacion);
     }
     return true;
@@ -186,9 +168,7 @@ size_t contar_coincidencias_infix(const char* str) {
     size_t ultima_coincidencia = 0;
     for (size_t i = 0; i <= strlen(str); i++) {
         if(es_operador(str[i]) || str[i] == '\0') {
-            total_coincidencias++;            
-            //esto es para verificar que se agreguen posiciones para los numeros entre los operadores.
-            //No agrega nada si entre el operador actual y el anterior encontrado no habia espacios.
+            total_coincidencias++;
             if (i - ultima_coincidencia > 1) {
                 total_coincidencias++;
             }
@@ -203,14 +183,11 @@ char **split_infix(const char *str) {
     char** split = malloc(sizeof(strlen(str)) * total_coincidencias + 1);
     if (!split) {
         return NULL;    
-    }
-    printf("Total coincidencias: %zu\n", total_coincidencias);
+    }    
     size_t pos_split = 0;
     size_t pos_str = 0;
-    for (size_t i = 0; i <= strlen(str); i++) {
-        printf("el operador que estoy comparando: \'%c\'\n", str[i]);
+    for (size_t i = 0; i <= strlen(str); i++) {        
         if(es_operador(str[i])) {
-            printf("ENTRA el operador que estoy comparando: \'%c\'\n", str[i]);
             if (i == 0) {
                 split[pos_split] = substr(str, 1);                
                 if (pos_str < strlen(str)) {
@@ -231,15 +208,13 @@ char **split_infix(const char *str) {
                 if (pos_str < strlen(str)) {
                     pos_str = i + 1;
                 }                                                
-            }                              
-            printf("que inserto en los split anteriores? %s\n", split[pos_split]);
+            }                                          
             if (pos_split < total_coincidencias - 1) {         
                 pos_split++;
             } 
             
         } else if (str[i] == '\0') {            
-            split[pos_split] = substr(str + pos_str, i - pos_str);
-            printf("que inserto en el ultimo split? %s\n", split[pos_split]);
+            split[pos_split] = substr(str + pos_str, i - pos_str);            
             if (pos_split < total_coincidencias - 1) {
                 pos_split++;
             }
@@ -277,10 +252,7 @@ long infix() {
                     operacion = formatear_operacion(lista_operaciones[i_lista_operaciones]);
                 } else {                    
                     operacion = strdup(lista_operaciones[i_lista_operaciones]);
-                }
-                printf("resultado ok ahora es igual a %i\n", resultado_ok);
-                printf("operacion que se va a procesar: %s\n", operacion);
-                printf("----------------------------------------------------------------------------------------------------------------------------------------------------\n");
+                }                
                 if (es_numero(operacion)) {
                     char* numero = malloc(strlen(operacion) + 1);
                     if(!numero) {
@@ -364,7 +336,6 @@ long infix() {
                         resultado_ok = procesar_operacion(operador_logaritmo, pila_operaciones, cola_salida);
                     }
                 } else if (strcmp(operacion, "(") == 0) {
-                    // printf("inserta un parentesis. Este mensaje deberia aparecer dos veces\n");
                     operacion_t* operador_apertura = crear_operador(operacion, APER_PARENTESIS, true);
                     if (!operador_apertura) {
                         free(operacion);
