@@ -47,7 +47,6 @@ void inicializar_hash_tabla (lista_t** hash_tabla, size_t tam) {
         hash_tabla[i] = lista_crear();
         count++;
     }
-    printf("Inicialicé %zu posiciones con listas", count);
 }
 
 bool necesita_redimension(hash_t* hash) {
@@ -65,37 +64,6 @@ bool necesita_redimension(hash_t* hash) {
     //return (((hash->cant > hash->tam * 3)) || (hash->cant < hash->tam / 3 && hash->tam / 2 >= TAM_INICIAL)) ? true : false;
     //en cualquier otro caso, retornar false
     return false;
-}
-
-campo_hash_t* hash_buscar(hash_t* hash, size_t posicion, const char* clave, bool borrar) {
-    //si la lista de la posicion donde debia caer el campo está vacia, retorno NULL
-    if (lista_esta_vacia(hash->tabla[posicion])) {
-        return NULL;
-    }
-    //si no está vacia, recorro la lista con un iterador de lista.
-    lista_iter_t* iter_lista_hash = lista_iter_crear(hash->tabla[posicion]);
-    while (!lista_iter_al_final(iter_lista_hash)) {
-        campo_hash_t* campo_actual = lista_iter_ver_actual(iter_lista_hash);
-        if (strcmp(clave, campo_actual->clave) == 0) {
-            //si encuentro el campo, y es para borrar, lo borro.
-            if (borrar) {
-                //me guardo el puntero al resultado (que deberia ser el mismo que el del campo_actual), ya que no deberia ser NULL.
-                void* resultado = lista_iter_borrar(iter_lista_hash);
-                //Si es NULL, es porque falló al borrar. Retorno NULL.
-                if (!resultado) {
-                    return NULL;
-                }
-            }
-            // Destruyo el iterador y retorno un puntero al campo (aca retorno campo_actual, que deberia coincidir con resultado).
-            lista_iter_destruir(iter_lista_hash);
-            return campo_actual;
-        }
-        //avanzo al siguiente elemento de la lista.
-        lista_iter_avanzar(iter_lista_hash);
-    }
-    //Si termina de recorrer el iterador y no encontró la lista, destruyo el iterador y retorno NULL.
-    lista_iter_destruir(iter_lista_hash);
-    return NULL;
 }
 
 //Ajusto la funcion hash_eliminar_campo. Ahora recibe la posicion e itera hasta encontrar el campo, lo elimina del iterador y lo devuelve.
@@ -197,13 +165,15 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato) {
     }
     lista_t** tabla = malloc(sizeof(lista_t*) * TAM_INICIAL);
     if (!tabla) {
+        //si fallo la creacion de la tabla de listas, libero el hash.
+        free(hash);
         return NULL;
     }
     hash->cant = 0;
     hash->tam = TAM_INICIAL;
     hash->destruir_dato = destruir_dato;
+    inicializar_hash_tabla(tabla, hash->tam);
     hash->tabla = tabla;
-    inicializar_hash_tabla(hash->tabla, hash->tam);
     return hash;
 }
 
@@ -213,12 +183,15 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato) {
  * Post: Se almacenó el par (clave, dato)
  */
 bool hash_guardar(hash_t *hash, const char *clave, void *dato) {
-    //busco en qué posicion deberia guardar el valor.
-    size_t posicion = fnv_hash(clave, hash->tam);
-    //con la funcion auxiliar, me fijo si existe ya ese campo en el hash. Si existe, me guardo el puntero, sino, voy a recibir NULL.
-    campo_hash_t* campo_a_guardar = hash_buscar(hash, posicion, clave, false);
-    //Si el campo no existia en la lista correspondiente a la posicion donde deberia ir en el hash, inicializo el campo y lo inserto primero en la lista.
-    if (!campo_a_guardar) {
+    //busco en qué posicion deberia estar el valor.
+    int posicion = hash_obtener_posicion(hash, clave);
+    //Si el campo no existia en la lista correspondiente a la posicion donde deberia ir en el hash,
+    //inicializo el campo y lo inserto primero en la lista.
+    printf("posicion es %i\n", posicion);
+    if (posicion == -1) {
+
+        //La posicion que obtuve no me sirve, debo volver a pedirla.
+        size_t pos = fnv_hash(clave, hash->tam);
         //Creo un puntero de tipo campo, para guardar la información del campo nuevo.
         campo_hash_t* campo_nuevo = malloc(sizeof(campo_hash_t));
         //si falla retorno false. Hasta acá no creé asigné memoria dinamica a ninguna estructura. No deberia ser necesario liberar nada.
@@ -235,7 +208,7 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato) {
         //El valor que guardo es un puntero al dato. De esto se va a encargar de liberar el usuario con la funcion destruir_dato que haya pasado al hash.
         campo_nuevo->valor = dato;
         //Inserto el campo en la primera posicion de la lista. Esto es indistinto. Podría haber quedado en el ultimo lugar.
-        bool resultado = lista_insertar_primero(hash->tabla[posicion], campo_nuevo);
+        bool resultado = lista_insertar_primero(hash->tabla[pos], campo_nuevo);
         //me fijo que el resultado de la insercion haya sido exitoso. Caso contrario, retorno false despues de liberar campo_nuevo.
         if (!resultado) {
             free(campo_nuevo);
@@ -249,9 +222,10 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato) {
             //Recordar sacar stdio.h al eliminar este comentario.
             printf("se necesita redimensionar para arriba. Comentario provisional\n");
         }
-
     //Si el campo existia, voy a actualizar el dato, sin tocar la clave.
     } else {
+        //busco el campo_hash_t con la posicion que obtuve. Hago cast de posicion a size_t
+        campo_hash_t* campo_a_guardar = hash_obtener_campo(hash, (size_t)posicion, clave);
         //Si barbara me paso una funcion de destruccion, tengo que destruir el dato anterior con dicha funcion.
         if (hash->destruir_dato) {
             campo_hash_t* campo_anterior = campo_a_guardar;
@@ -271,38 +245,38 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato) {
  * en el caso de que estuviera guardado.
  */
 void *hash_borrar(hash_t *hash, const char *clave) {
-    //busco en qué posicion deberia borrar el valor.
-    size_t posicion = fnv_hash(clave, hash->tam);
-    //con la funcion auxiliar, me fijo si existe ya ese campo en el hash. Si existe, me guardo el puntero, sino, voy a recibir NULL.
-    //Le paso como parámetro borrar = true. Si lo encuentra, borra la posicion de la lista y me devuelve el campo_hash.
-    campo_hash_t* campo_a_borrar = hash_buscar(hash, posicion, clave, true);
-
-    //Si encuentro el campo, deberia borrarlo, pero acá tengo un problema, ya que el iterador me devuelve el campo a borrar,
-    // pero no puedo eliminar el elemento de la lista desde acá. A lo sumo puedo liberar el campo.
-    //Deberia iterar y si encuentro el campo, borrarlo.
-    //Para ello voy a modificar la funcion de busqueda de hash, pasando por parametro una funcion que si no es nula, borre el campo.
-    if (campo_a_borrar) {
-        //me guardo el dato contenido en el campo.
-        void* dato_campo_borrado = campo_a_borrar->valor;
-
-        //tengo que liberar la clave, porque ya no la voy a necesitar.
-        free(campo_a_borrar->clave);
-        //Ahora puedo liberar el campo_hash. El dato no, porque se lo voy a devolver al usuario.
-        free(campo_a_borrar);
-        //Luego de borrar, actualizo la cantidad de elementos del hash.
-        hash->cant--;
-        //verifico que luego de disminuir la cantidad, no sea necesario redimensionar.
-        if (necesita_redimension(hash)) {
-            //redimensiono. la funcion se encarga de aumentar o disminuir la capacidad.
-            //Recordar sacar stdio.h al eliminar este comentario.
-            printf("se necesita redimensionar para abajo. Comentario provisional\n");
-        }
-        //retorno el dato del campo borrado.
-        return dato_campo_borrado;
-    //Si el campo no existia en la lista correspondiente a la posicion donde deberia ir en el hash, retorno NULL, ya que no tengo que borrar
+    //busco en qué posicion deberia estar el valor.
+    int posicion = hash_obtener_posicion(hash, clave);
+    //Si no encuentra el campo, retorna NULL
+    if (posicion == -1) {
+        return NULL;
     }
-    //Si llega hasta aca, es porque no habia dato para borrar. Entonces retorno NULL.
-    return NULL;
+
+    //Procedo a eliminar el campo de la lista. Recibo un puntero al campo o NULL si falló.
+    //hago cast del int a size_t. Deberia verificar si es necesario dejarlo como int directamente.
+    campo_hash_t* campo_a_borrar = hash_eliminar_campo(hash, (size_t)posicion, clave);
+    //Si devuelve NULL es porque falló, ya que anteriormente validamos que el campo existiera en el hash.
+    if (!campo_a_borrar) {
+        return NULL;
+    }
+
+    //me guardo el dato contenido en el campo.
+    void* dato_campo_borrado = campo_a_borrar->valor;
+
+    //tengo que liberar la clave, porque ya no la voy a necesitar.
+    free(campo_a_borrar->clave);
+    //Ahora puedo liberar el campo_hash. El dato no, porque se lo voy a devolver al usuario.
+    free(campo_a_borrar);
+    //Luego de borrar, actualizo la cantidad de elementos del hash.
+    hash->cant--;
+    //verifico que luego de disminuir la cantidad, no sea necesario redimensionar.
+    if (necesita_redimension(hash)) {
+        //redimensiono. la funcion se encarga de aumentar o disminuir la capacidad.
+        //Recordar sacar stdio.h al eliminar este comentario.
+        printf("se necesita redimensionar para abajo. Comentario provisional\n");
+    }
+    //retorno el dato del campo borrado.
+    return dato_campo_borrado;
 }
 
 /* Obtiene el valor de un elemento del hash, si la clave no se encuentra
@@ -391,15 +365,13 @@ hash_iter_t *hash_iter_crear(const hash_t *hash) {
     iter_hash->hash = hash;
     //al crear el iterador, debo apuntar a la primera posicion no vacia de la tabla de hash
     size_t pos = 0;
-    while(lista_esta_vacia(iter_hash->hash->tabla[pos]) && pos < iter_hash->hash->tam) {
+    while(lista_esta_vacia(iter_hash->hash->tabla[pos]) && pos < iter_hash->hash->tam - 1) {
         //voy actualizando la posicion hasta obtener una lista que nos se encuentre vacia;
         //se detiene si encuentra una lista que no esté vacia o llegó a la ultima posicion del hash.
         pos++;
     }
-
     //me guardo la posicion en donde me quedé. Con esta posicion voy a saber qué lista tengo que recorrer para seguir avanzando.
     iter_hash->posicion = pos;
-    printf("Busque la posicion %zu del hash\n", iter_hash->posicion);
 
     //para la posicion en donde me encuentre, voy a crear un iterador de lista. Se va a posicionar en la primera posicion de la lista.
     //Si está vacia, va a estar al final.
@@ -409,6 +381,8 @@ hash_iter_t *hash_iter_crear(const hash_t *hash) {
         free(iter_hash);
         return NULL;
     }
+    //me guardo el iterador de lista.
+    iter_hash->iter_lista = iter_lista;
 
     //retorno el iterador de hash.
     return iter_hash;
@@ -430,18 +404,19 @@ bool hash_iter_avanzar(hash_iter_t *iter) {
 
     //si luego de avanzar, la lista esta al final, tengo que crear un nuevo iterador.
     if (lista_iter_al_final(iter->iter_lista)) {
-        //primero destruyo el anterior iterador de lista.
-        lista_iter_destruir(iter->iter_lista);
         //si todavia puedo avanzar por el hash, avanzo a una nueva posicion.
         if (iter->posicion < iter->hash->tam - 1) {
             iter->posicion++;
-        //si ya no se puede avanzar, retorno false. Aca estaria al final del hash.
+        //si ya no se puede avanzar, retorno true, porque ya me habia movido. Aca estaria al final del hash.
         //Se cumple que lista_iter_al final y iter->posicion = hash->tam - 1
         } else {
-            return false;
+            return true;
         }
 
-        //Si pude avanzar a la siguiente posicion del hash, tengo que recorrer el hash hasta que encuentre una lista no vacia
+        //Si pude avanzar de posicion, primero destruyo el anterior iterador de lista.
+        lista_iter_destruir(iter->iter_lista);
+
+        //Ahora Tengo que recorrer el hash hasta que encuentre una lista no vacia
         // o hasta que llegue a la ultima posicion.
         while (lista_esta_vacia(iter->hash->tabla[iter->posicion]) && iter->posicion < iter->hash->tam - 1) {
             iter->posicion++;
@@ -454,6 +429,8 @@ bool hash_iter_avanzar(hash_iter_t *iter) {
         if (!iter_lista) {
             return false;
         }
+        //me guardo el iterador de lista creado.
+        iter->iter_lista = iter_lista;
     }
     //despues de haber avanzado, debo retornar true. Nunca deberia quedarme al final de una lista, siempre y cuando no esté al final del hash.
     return true;
@@ -479,7 +456,9 @@ const char *hash_iter_ver_actual(const hash_iter_t *iter) {
 // Comprueba si terminó la iteración
 bool hash_iter_al_final(const hash_iter_t *iter) {
     //estoy al final si se cumple que el iterador de lista está al final y la posicion del iterador coincide con la ultima posicion del hash.
-    return (lista_iter_al_final(iter->iter_lista) && iter->posicion == iter->hash->tam - 1);
+    bool pos_al_final = (iter->posicion == iter->hash->tam - 1) ? true : false;
+    bool esta_al_final = lista_iter_al_final(iter->iter_lista);
+    return (esta_al_final && pos_al_final);
 }
 
 // Destruye iterador
