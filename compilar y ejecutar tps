@@ -13,4 +13,5 @@ gcc -g -std=c99 -Wall -Wconversion -Wtype-limits -pedantic -Werror -o infix infi
 valgrind --leak-check=full --track-origins=yes --show-reachable=yes -s ./infix < arith.txt
 
 --HASH
-gcc -g -std=c99 -Wall -Wconversion -Wtype-limits -pedantic -Werror -o hash hash.c lista.c testing.c main.c
+gcc -g -std=c99 -Wall -Wconversion -Wtype-limits -pedantic -Werror -o hash hash.c lista.c testing.c hash_pruebas.c main.c
+valgrind --leak-check=full --track-origins=yes --show-reachable=yes -s ./hash
