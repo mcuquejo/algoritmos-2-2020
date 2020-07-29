@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "lista.h"
 #include "hash.h"
-#define TAM_INICIAL 31
+#define TAM_INICIAL 5
 
 /* ******************************************************************
  *                           STRUCTS
@@ -49,38 +49,21 @@ void inicializar_hash_tabla (lista_t** hash_tabla, size_t tam) {
     }
 }
 
-bool necesita_redimension(hash_t* hash) {
-    //funcion que verifica si se necesita redimensionar.
-    //Si la cantidad de elementos es mayor a tres veces el tamaño del hash, hay que redimensionar
-    if (hash->cant > hash->tam * 3) {
-        return true;
-    }
-    //Si la cantidad de elementos es menor a un tercio de la capacidad total del hash
-    //y redimensionar no hará que el tamaño nuevo sea menor al tamaño inicial, hay que redimensionar
-    if (hash->cant < hash->tam / 3 && hash->tam / 2 >= TAM_INICIAL) {
-        return true;
-    }
-    //esto luego se puede convertir en esta linea: Ahora nomás para ver por separado.
-    //return (((hash->cant > hash->tam * 3)) || (hash->cant < hash->tam / 3 && hash->tam / 2 >= TAM_INICIAL)) ? true : false;
-    //en cualquier otro caso, retornar false
-    return false;
-}
-
 //Ajusto la funcion hash_eliminar_campo. Ahora recibe la posicion e itera hasta encontrar el campo, lo elimina del iterador y lo devuelve.
 //PRE: El campo existe en la lista pasada por parametro
 //POST: Itero la lista hasta encontrar la posicion del campo. Elimino el elemento y lo retorno.
 campo_hash_t* hash_eliminar_campo(const hash_t* hash, size_t posicion, const char* clave) {
     //Creo un iterador de lista para recorrerla.
     lista_iter_t* iter_lista_hash = lista_iter_crear(hash->tabla[posicion]);
-
     //Me guardo el campo al que apunta el iterador de lista.
     campo_hash_t* campo_actual = lista_iter_ver_actual(iter_lista_hash);
-
     //Si el campo no era el buscado, va a recorrer el iterador hasta encontrarlo, o hasta que se acabe la lista.
     //Por la precondicion, deberia encontrarlo siempre.
     while (!lista_iter_al_final(iter_lista_hash) && strcmp(clave, campo_actual->clave) != 0) {
         //avanzo al siguiente elemento de la lista.
         lista_iter_avanzar(iter_lista_hash);
+        //actualizo campo actual con el el siguiente elemento de la lista.
+        campo_actual = lista_iter_ver_actual(iter_lista_hash);
     }
     //me guardo el puntero al resultado (que deberia ser el mismo que el del campo_actual), ya que no deberia ser NULL.
     void* resultado = lista_iter_borrar(iter_lista_hash);
@@ -90,7 +73,6 @@ campo_hash_t* hash_eliminar_campo(const hash_t* hash, size_t posicion, const cha
     }
     //Destruyo el iterador.
     lista_iter_destruir(iter_lista_hash);
-
     //retorno un puntero al campo.
     return campo_actual;
 }
@@ -110,6 +92,8 @@ campo_hash_t* hash_obtener_campo(const hash_t* hash, size_t posicion, const char
     while (!lista_iter_al_final(iter_lista_hash) && strcmp(clave, campo_actual->clave) != 0) {
         //avanzo al siguiente elemento de la lista.
         lista_iter_avanzar(iter_lista_hash);
+        //Actualizo campo actual con el valor del siguiente elemento de la lista.
+        campo_actual = lista_iter_ver_actual(iter_lista_hash);
     }
     //Al salir del while, destruyo el iterador.
     lista_iter_destruir(iter_lista_hash);
@@ -177,7 +161,6 @@ campo_hash_t* crear_campo(const char* clave, void* dato) {
 bool hash_redimensionar(hash_t* hash){
     //creo una variable tamaño donde verificare cual será el nuevo tamaño del hash.
     size_t tam = 0;
-
     //Si la cantidad es el triple del tamaño del hash, redimensionaré al doble de tamaño.
     if (hash->cant > hash->tam * 3) {
         tam = hash->tam * 2;
@@ -199,6 +182,8 @@ bool hash_redimensionar(hash_t* hash){
     lista_t** tabla_actual = hash->tabla;
     //me guardo por las dudas el tamaño antes de redimensionar.
     size_t tam_actual = hash->tam;
+    //me guardo la capacidad actual por las dudas.
+    size_t cant_actual = hash->cant;
 
     //actualizo el tamaño del hash.
     hash->tam = tam;
@@ -207,9 +192,11 @@ bool hash_redimensionar(hash_t* hash){
     //me guardo las listas en el hash.
     hash->tabla = tabla;
 
+    //como voy a usar la primitiva de guardar, ahora tengo que reiniciar la cantidad de elementos a 0.
+    //Al finalizar la operacion deberia volver a ser la misma que antes de redimensionar.
+    hash->cant = 0;
     //una vez que ya tengo la nueva estructura creada, itero la estructura auxiliar.
     for (size_t i=0; i < tam_actual; i++){
-
         //creo un iterador para la lista de la posicion actual.
         lista_iter_t* iter_lista = lista_iter_crear(tabla_actual[i]);
         //si fallo la creacion del iterador de lista, libero la tabla nueva
@@ -218,6 +205,7 @@ bool hash_redimensionar(hash_t* hash){
             free(hash->tabla);
             hash->tabla = tabla_actual;
             hash->tam = tam_actual;
+            hash->cant = cant_actual;
             return false;
         }
         //recorro todos los elementos de la lista y los guardo en el hash del nuevo tamaño.
@@ -232,6 +220,7 @@ bool hash_redimensionar(hash_t* hash){
                 free(hash->tabla);
                 hash->tabla = tabla_actual;
                 hash->tam = tam_actual;
+                hash->cant = cant_actual;
                 return false;
             }
             //avanzo a la siguiente posicion de la lista
@@ -243,6 +232,20 @@ bool hash_redimensionar(hash_t* hash){
     }
 
     //una vez terminado el proceso, libero la tabla vieja.
+    for (size_t i = 0; i < tam_actual; i++) {
+        while (!lista_esta_vacia(tabla_actual[i])) {
+            //voy borrando los nodos de la lista y me guardo el campo_hash_t que contiene
+            campo_hash_t* campo_a_borrar = lista_borrar_primero(tabla_actual[i]);
+            //si hay un campo_hash_t, destruyo la clave, y por ultimo el campo. El dato no porque esta en el nuevo hash.
+            if (campo_a_borrar) {
+                free(campo_a_borrar->clave);
+                free(campo_a_borrar);
+            }
+        }
+        //una vez que está vacia la lista, la destruyo. No necesito liberar nada, porque el campo ya fue destruido previamente.
+        lista_destruir(tabla_actual[i], NULL);
+    }
+    //una vez que vacié todas las listas y las destruí, puedo liberar la estructura que las contenia.
     free(tabla_actual);
     return true;
 }
@@ -298,9 +301,13 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato) {
         //Luego de insertar, actualizo la cantidad de elementos del hash.
         hash->cant++;
         //verifico que luego de aumentar la cantidad, no sea necesario redimensionar.
-        if (necesita_redimension(hash)) {
+        if (hash->cant > hash->tam * 3) {
             //redimensiono. la funcion se encarga de aumentar o disminuir la capacidad.
-            hash_redimensionar(hash);
+            bool resultado = hash_redimensionar(hash);
+            //¿que hago si falla la redimension?
+            if (!resultado) {
+                printf("falló la redimension\n");
+            }
         }
     //Si el campo existia, voy a actualizar el dato, sin tocar la clave.
     } else {
@@ -339,10 +346,8 @@ void *hash_borrar(hash_t *hash, const char *clave) {
     if (!campo_a_borrar) {
         return NULL;
     }
-
     //me guardo el dato contenido en el campo.
     void* dato_campo_borrado = campo_a_borrar->valor;
-
     //tengo que liberar la clave, porque ya no la voy a necesitar.
     free(campo_a_borrar->clave);
     //Ahora puedo liberar el campo_hash. El dato no, porque se lo voy a devolver al usuario.
@@ -350,9 +355,14 @@ void *hash_borrar(hash_t *hash, const char *clave) {
     //Luego de borrar, actualizo la cantidad de elementos del hash.
     hash->cant--;
     //verifico que luego de disminuir la cantidad, no sea necesario redimensionar.
-    if (necesita_redimension(hash)) {
+    if (hash->cant < hash->tam / 3 && hash->tam / 2 >= TAM_INICIAL) {
         //redimensiono. la funcion se encarga de aumentar o disminuir la capacidad.
-        hash_redimensionar(hash);
+        bool resultado = hash_redimensionar(hash);
+        //¿que hago si falla la redimension?
+        if (!resultado) {
+            printf("falló la redimension\n");
+        }
+
     }
     //retorno el dato del campo borrado.
     return dato_campo_borrado;
