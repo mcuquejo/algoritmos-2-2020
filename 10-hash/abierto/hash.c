@@ -292,9 +292,9 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato) {
             return false;
         }
         //Inserto el campo en la primera posicion de la lista. Esto es indistinto. Podría haber quedado en el ultimo lugar.
-        bool resultado = lista_insertar_primero(hash->tabla[pos], campo_nuevo);
+        bool resultado_insertar = lista_insertar_primero(hash->tabla[pos], campo_nuevo);
         //me fijo que el resultado de la insercion haya sido exitoso. Caso contrario, retorno false despues de liberar campo_nuevo.
-        if (!resultado) {
+        if (!resultado_insertar) {
             free(campo_nuevo);
             return false;
         }
@@ -303,9 +303,9 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato) {
         //verifico que luego de aumentar la cantidad, no sea necesario redimensionar.
         if (hash->cant > hash->tam * 3) {
             //redimensiono. la funcion se encarga de aumentar o disminuir la capacidad.
-            bool resultado = hash_redimensionar(hash);
+            bool resultado_redimensionar = hash_redimensionar(hash);
             //¿que hago si falla la redimension?
-            if (!resultado) {
+            if (!resultado_redimensionar) {
                 printf("falló la redimension\n");
             }
         }
@@ -357,9 +357,9 @@ void *hash_borrar(hash_t *hash, const char *clave) {
     //verifico que luego de disminuir la cantidad, no sea necesario redimensionar.
     if (hash->cant < hash->tam / 3 && hash->tam / 2 >= TAM_INICIAL) {
         //redimensiono. la funcion se encarga de aumentar o disminuir la capacidad.
-        bool resultado = hash_redimensionar(hash);
+        bool resultado_redimensionar = hash_redimensionar(hash);
         //¿que hago si falla la redimension?
-        if (!resultado) {
+        if (!resultado_redimensionar) {
             printf("falló la redimension\n");
         }
 
