@@ -154,6 +154,98 @@ void destruir_campo(campo_hash_t* campo, hash_destruir_dato_t destruir_dato) {
     free(campo);
 }
 
+campo_hash_t* crear_campo(const char* clave, void* dato) {
+    //Creo un puntero de tipo campo, para guardar la información del campo nuevo.
+    campo_hash_t* campo_nuevo = malloc(sizeof(campo_hash_t));
+    //si falla retorno NULL. Hasta acá no creé asigné memoria dinamica a ninguna estructura. No deberia ser necesario liberar nada.
+    if (!campo_nuevo) {
+        return NULL;
+    }
+    //al asignar la clave al struct campo_hash_t, está haciendo un malloc. Recordar que al eliminarlo, debo liberar este espacio en memoria.
+    campo_nuevo->clave = strdup(clave);
+    //Verifico que se haya duplicado correctamente la clave. Sino, libero el struct campo que cree y retorno NULL.
+    if (!campo_nuevo->clave) {
+        free(campo_nuevo);
+        return NULL;
+    }
+    //El valor que guardo es un puntero al dato. De esto se va a encargar de liberar el usuario con la funcion destruir_dato que haya pasado al hash.
+    campo_nuevo->valor = dato;
+    return campo_nuevo;
+}
+
+//Redimensiona el hash a un tamanio dado
+bool hash_redimensionar(hash_t* hash){
+    //creo una variable tamaño donde verificare cual será el nuevo tamaño del hash.
+    size_t tam = 0;
+
+    //Si la cantidad es el triple del tamaño del hash, redimensionaré al doble de tamaño.
+    if (hash->cant > hash->tam * 3) {
+        tam = hash->tam * 2;
+    }
+    //Si la cantidad de elementos es menor a un tercio de la capacidad total del hash
+    //redimensionaré a la mitad del tamaño.
+    if (hash->cant < hash->tam / 3 && hash->tam / 2 >= TAM_INICIAL) {
+        tam = hash->tam / 2;
+    }
+
+    //creo una tabla del tamaño nuevo del hash.
+    lista_t** tabla = malloc(sizeof(lista_t*) * tam);
+    if (!tabla) {
+        //si fallo la creacion de la tabla de listas, retorno false.
+        return false;
+    }
+
+    //me guardo por las dudas el puntero al anterior array de listas_t
+    lista_t** tabla_actual = hash->tabla;
+    //me guardo por las dudas el tamaño antes de redimensionar.
+    size_t tam_actual = hash->tam;
+
+    //actualizo el tamaño del hash.
+    hash->tam = tam;
+    //ahora que se el tamaño, inicializo las listas en cada posicion
+    inicializar_hash_tabla(tabla, hash->tam);
+    //me guardo las listas en el hash.
+    hash->tabla = tabla;
+
+    //una vez que ya tengo la nueva estructura creada, itero la estructura auxiliar.
+    for (size_t i=0; i < tam_actual; i++){
+
+        //creo un iterador para la lista de la posicion actual.
+        lista_iter_t* iter_lista = lista_iter_crear(tabla_actual[i]);
+        //si fallo la creacion del iterador de lista, libero la tabla nueva
+        //y vuelvo a guardar la tabla anterior, retornando false.
+        if (!iter_lista) {
+            free(hash->tabla);
+            hash->tabla = tabla_actual;
+            hash->tam = tam_actual;
+            return false;
+        }
+        //recorro todos los elementos de la lista y los guardo en el hash del nuevo tamaño.
+        while (!lista_iter_al_final(iter_lista)) {
+            //me guardo el elemento actual del iterador.
+            campo_hash_t* campo_actual = lista_iter_ver_actual(iter_lista);
+            //inserto el elemento en la tabla nueva.
+            bool resultado = hash_guardar(hash, campo_actual->clave, campo_actual->valor);
+            //si por algun motivo falla la insercion del campo a la tabla nueva, libero la tabla nueva
+            // y vuelvo a guardar la tabla anterior, retornando false.
+            if (!resultado) {
+                free(hash->tabla);
+                hash->tabla = tabla_actual;
+                hash->tam = tam_actual;
+                return false;
+            }
+            //avanzo a la siguiente posicion de la lista
+            lista_iter_avanzar(iter_lista);
+        }
+        //una vez que termino de guardar los elementos de la lista, destruyo el iterador.
+        // En el siguiente ciclo se creará uno nuevo para la siguiente posicion
+        lista_iter_destruir(iter_lista);
+    }
+
+    //una vez terminado el proceso, libero la tabla vieja.
+    free(tabla_actual);
+    return true;
+}
 /* ******************************************************************
  *                       PRIMITIVAS DEL HASH
  * *****************************************************************/
@@ -171,8 +263,8 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato) {
     }
     hash->cant = 0;
     hash->tam = TAM_INICIAL;
-    hash->destruir_dato = destruir_dato;
     inicializar_hash_tabla(tabla, hash->tam);
+    hash->destruir_dato = destruir_dato;
     hash->tabla = tabla;
     return hash;
 }
@@ -187,26 +279,15 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato) {
     int posicion = hash_obtener_posicion(hash, clave);
     //Si el campo no existia en la lista correspondiente a la posicion donde deberia ir en el hash,
     //inicializo el campo y lo inserto primero en la lista.
-    printf("posicion es %i\n", posicion);
     if (posicion == -1) {
-
         //La posicion que obtuve no me sirve, debo volver a pedirla.
         size_t pos = fnv_hash(clave, hash->tam);
         //Creo un puntero de tipo campo, para guardar la información del campo nuevo.
-        campo_hash_t* campo_nuevo = malloc(sizeof(campo_hash_t));
+        campo_hash_t* campo_nuevo = crear_campo(clave, dato);
         //si falla retorno false. Hasta acá no creé asigné memoria dinamica a ninguna estructura. No deberia ser necesario liberar nada.
         if (!campo_nuevo) {
             return false;
         }
-        //al asignar la clave al struct campo_hash_t, está haciendo un malloc. Recordar que al eliminarlo, debo liberar este espacio en memoria.
-        campo_nuevo->clave = strdup(clave);
-        //Verifico que se haya duplicado correctamente la clave. Sino, libero el struct campo que cree y retorno False.
-        if (!campo_nuevo->clave) {
-            free(campo_nuevo);
-            return false;
-        }
-        //El valor que guardo es un puntero al dato. De esto se va a encargar de liberar el usuario con la funcion destruir_dato que haya pasado al hash.
-        campo_nuevo->valor = dato;
         //Inserto el campo en la primera posicion de la lista. Esto es indistinto. Podría haber quedado en el ultimo lugar.
         bool resultado = lista_insertar_primero(hash->tabla[pos], campo_nuevo);
         //me fijo que el resultado de la insercion haya sido exitoso. Caso contrario, retorno false despues de liberar campo_nuevo.
@@ -219,8 +300,7 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato) {
         //verifico que luego de aumentar la cantidad, no sea necesario redimensionar.
         if (necesita_redimension(hash)) {
             //redimensiono. la funcion se encarga de aumentar o disminuir la capacidad.
-            //Recordar sacar stdio.h al eliminar este comentario.
-            printf("se necesita redimensionar para arriba. Comentario provisional\n");
+            hash_redimensionar(hash);
         }
     //Si el campo existia, voy a actualizar el dato, sin tocar la clave.
     } else {
@@ -272,8 +352,7 @@ void *hash_borrar(hash_t *hash, const char *clave) {
     //verifico que luego de disminuir la cantidad, no sea necesario redimensionar.
     if (necesita_redimension(hash)) {
         //redimensiono. la funcion se encarga de aumentar o disminuir la capacidad.
-        //Recordar sacar stdio.h al eliminar este comentario.
-        printf("se necesita redimensionar para abajo. Comentario provisional\n");
+        hash_redimensionar(hash);
     }
     //retorno el dato del campo borrado.
     return dato_campo_borrado;
