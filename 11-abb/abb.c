@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "abb.h"
+#include "lista.h"
 
 enum tipo_arbol {RAIZ = 1, IZQ = 2, DER = 3};
 /* ******************************************************************
@@ -25,7 +26,8 @@ struct abb {
 struct abb_iter {
     const abb_t* abb;
     size_t posicion;
-    abb_iter_t* iter_abb;
+    //Se tiene que implementar como una pila.
+    lista_iter_t* iter_lista;
 };
 
 /* ******************************************************************
