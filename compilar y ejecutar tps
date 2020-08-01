@@ -23,3 +23,7 @@ gcc -g -O2 -std=c99 -Wall -Werror -pedantic -Wformat=2 -Wshadow -Wpointer-arith 
 gcc -g -O2 -std=c99 -Wall -Werror -pedantic -Wformat=2 -Wshadow -Wpointer-arith -Wunreachable-code -Wconversion -Wno-sign-conversion -Wbad-function-cast -DCORRECTOR   -c -o main.o main.c
 gcc -g -O2 -std=c99 -Wall -Werror -pedantic -Wformat=2 -Wshadow -Wpointer-arith -Wunreachable-code -Wconversion -Wno-sign-conversion -Wbad-function-cast -DCORRECTOR   -c -o hash.o hash.c
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--ABB
+gcc -g -std=c99 -Wall -Wconversion -Wtype-limits -pedantic -Werror -o abb abb.c testing.c pruebas_alumno.c main.c
+valgrind --leak-check=full --track-origins=yes --show-reachable=yes -s ./abb
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
