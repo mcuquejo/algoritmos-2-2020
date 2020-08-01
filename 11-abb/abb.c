@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,12 +22,11 @@ struct abb {
     abb_comparar_clave_t comparar;
 };
 
-
-
-typedef int (*abb_comparar_clave_t) (const char *, const char *);
-typedef void (*abb_destruir_dato_t) (void *);
-
-typedef struct abb_iter abb_iter_t;
+struct abb_iter {
+    const abb_t* abb;
+    size_t posicion;
+    abb_iter_t* iter_abb;
+};
 
 /* ******************************************************************
  *                      FUNCIONES AUXILIARES
@@ -51,18 +51,12 @@ nodo_abb_t* crear_nodo(const char* clave, void* dato) {
         return NULL;
     }
     // guardo el puntero al dato;
-    nodo_abb->dato;
+    nodo_abb->dato = dato;
     //retorno el nodo inicializado.
     return nodo_abb;
 }
 
-//funcion auxiliar que busca un nodo a recibiendo el arbol. Es un wrapper de la funcion recursiva.
-nodo_abb_t* buscar_nodo(abb_t* abb, const char* clave) {
-    //retorna el nodo buscado o NULL en caso de no existir.
-    return rec_buscar_nodo(abb->raiz, abb->comparar, clave);
-}
-
-//funcion auxiliar que busca un nodo a recibiendo el arbol. Es un wrapper de la funcion recursiva.
+//funcion auxiliar que busca un nodo a recibiendo un nodo
 //Si encuentro el nodo a partir de la clave, retorno un puntero al mismo.
 //Si no existe un nodo para la clave buscada, se retorna el nodo padre, que es un nodo hoja.
 nodo_abb_t* rec_buscar_nodo(nodo_abb_t* nodo, abb_comparar_clave_t func_comparacion, const char* clave) {
@@ -77,37 +71,31 @@ nodo_abb_t* rec_buscar_nodo(nodo_abb_t* nodo, abb_comparar_clave_t func_comparac
         return nodo;
     }
 
-    nodo_abb_t* nodo_izq = NULL;
-    nodo_abb_t* nodo_der = NULL;
     //Si la clave de mi nodo es mayor, la clave buscada solo puede estar a la izquierda por propiedad del abb.
     if (func_comparacion(nodo->clave, clave) > 0) {
         //busco el nodo en el hijo izquierdo.
-        nodo_izq = rec_buscar_nodo(nodo->izq, func_comparacion, clave);
+        return rec_buscar_nodo(nodo->izq, func_comparacion, clave);
     }
     //Si la clave de mi nodo es menor, la clave buscada solo puede estar a la derecha por propiedad del abb.
     if (func_comparacion(nodo->clave, clave) < 0) {
         //busco el nodo en el hijo derecho.
-        nodo_der = rec_buscar_nodo(nodo->der, func_comparacion, clave);
+        return rec_buscar_nodo(nodo->der, func_comparacion, clave);
     }
 
     //Si al navegar por los nodos no encontré nada, estoy seguro que si el nodo en el que estoy parado, es un nodo hoja,
     //Retorno este nodo para que se le inserte el hijo correspondiente.
-    if (!nodo_izq && !nodo_der) {
+    if (!nodo->izq && !nodo->der) {
         return nodo;
     }
 
+    //me pide retornar algo por defecto. Tengo que revisar.
+    return NULL;
 }
 
-//funcion auxiliar que busca un nodo recibiendo el arbol. Es un wrapper de la funcion recursiva.
-nodo_abb_t* buscar_nodo(abb_t* abb, const char* clave) {
+//funcion auxiliar que busca un nodo a recibiendo el arbol. Es un wrapper de la funcion recursiva.
+nodo_abb_t* buscar_nodo(const abb_t* abb, const char* clave) {
     //retorna el nodo buscado o NULL en caso de no existir.
     return rec_buscar_nodo(abb->raiz, abb->comparar, clave);
-}
-
-//funcion auxiliar que busca un nodo padre recibiendo el arbol. Es un wrapper de la funcion recursiva.
-nodo_abb_t* buscar_nodo_padre(abb_t* abb, const char* clave) {
-    //retorna el nodo buscado o NULL en caso de no existir.
-    return rec_buscar_nodo_padre(abb->raiz, abb->comparar, clave);
 }
 
 //funcion auxiliar que voy a usar para buscar el padre del nodo en donde voy a insertar, actualizar o borrar.
@@ -152,7 +140,17 @@ nodo_abb_t* rec_buscar_nodo_padre(nodo_abb_t* nodo, abb_comparar_clave_t func_co
         //sino, entro a mi hijo derecho y continuo buscando.
         return rec_buscar_nodo_padre(nodo->der, func_comparacion, clave);
     }
+
+    //me pide retornar algo por defecto. Tengo que revisar.
+    return NULL;
 }
+
+//funcion auxiliar que busca un nodo padre recibiendo el arbol. Es un wrapper de la funcion recursiva.
+nodo_abb_t* buscar_nodo_padre(abb_t* abb, const char* clave) {
+    //retorna el nodo buscado o NULL en caso de no existir.
+    return rec_buscar_nodo_padre(abb->raiz, abb->comparar, clave);
+}
+
 
 //funcion auxiliar que recibe el hijo izquierdo del nodo a eliminar y recorre el arbol lo más a la derecha posible del mismo.
 nodo_abb_t* rec_buscar_nodo_reemplazo(nodo_abb_t* nodo) {
@@ -160,8 +158,6 @@ nodo_abb_t* rec_buscar_nodo_reemplazo(nodo_abb_t* nodo) {
     if (!nodo) {
         return NULL;
     }
-
-    nodo_abb_t* nodo_der = NULL;
 
     //verifico si hay hijo derecho. Si hay hijo derecho, lo navego.
     if (nodo->der) {
@@ -288,80 +284,6 @@ bool abb_guardar(abb_t *arbol, const char *clave, void *dato){
     }
 }
 
-//seguir instrucciones de lauti en video de borrar. (08/06/2020)
-void *abb_borrar(abb_t *arbol, const char *clave) {
-    //Busco si ya existe el nodo. Tengo tres opciones,
-    //o es el nodo a borrar, o es un nodo hoja, que sería el padre de mi nodo, o el arbol esta vacio.
-    nodo_abb_t* nodo = buscar_nodo(arbol, clave);
-    //Si el arbol esta vacio, retorno NULL, ya que no tengo nada que borrar.
-    if (!nodo) {
-        return NULL;
-    }
-
-    //Si el nodo que encontré no es el que quiero borrar, retorno NULL.
-    if(arbol->comparar(nodo->clave, clave) != 0) {
-        return NULL;
-    }
-
-    //Si llego hasta acá, tengo que verificar si el nodo es hoja, si tiene un hijo, o si tiene dos hijos.
-    //me creo una variable liberar_nodo por legibilidad.
-    bool liberar_nodo = true;
-    if (!nodo->izq && !nodo->der) {
-        //Si no tiene hijos, destruyo el nodo junto con la clave y recupero el dato.
-        void* dato = abb_nodo_destruir(nodo, liberar_nodo);
-        //disminuyo la cantidad de elementos
-        arbol->cant--;
-        //retorno el dato contenido en el nodo borrado.
-        return dato;
-    //si el arbol tiene un solo hijo, se elimina el nodo y se reemplaza con su hijo.
-    //verifico si solo tiene hijo izquierdo:
-    } else if (nodo->izq && !nodo->der) {
-        //me guardo el puntero al hijo izquierdo
-        nodo_abb_t* hijo_izq = nodo->izq;
-        //borro el nodo y me guardo el dato. Esta vez no debo liberar el nodo. Simplemente libero lo que contiene, ya que voy a reemplazar su contenido.
-        void* dato = abb_nodo_destruir(nodo, !liberar_nodo);
-        //actualizo la clave del nodo apuntando a la del hijo.
-        nodo->clave = hijo_izq->clave;
-        //actualizo el dato apuntando al del hijo.
-        nodo->dato = hijo_izq->dato;
-        //actualizo los hijos del nodo por los del hijo izquierdo.
-        nodo->izq = hijo_izq->izq;
-        nodo->der = hijo_izq->der;
-        //disminuyo la cantidad de elementos
-        arbol->cant--;
-        //retorno el dato contenido en el nodo borrado. No creo que sea necesario liberar al auxiliar.
-        return dato;
-
-    //verifico si solo tiene hijo derecho:
-    } else if (!nodo->izq && nodo->der) {
-        //me guardo el puntero al hijo derecho
-        nodo_abb_t* hijo_der = nodo->der;
-        //borro el nodo y me guardo el dato. Esta vez no debo liberar el nodo. Simplemente libero lo que contiene, ya que voy a reemplazar su contenido.
-        void* dato = abb_nodo_destruir(nodo, !liberar_nodo);
-        //actualizo la clave del nodo apuntando a la del hijo.
-        nodo->clave = hijo_der->clave;
-        //actualizo el dato apuntando al del hijo.
-        nodo->dato = hijo_der->dato;
-        //actualizo los hijos del nodo por los del hijo derecho.
-        nodo->izq = hijo_der->izq;
-        nodo->der = hijo_der->der;
-        //disminuyo la cantidad de elementos
-        arbol->cant--;
-        //retorno el dato contenido en el nodo borrado. No creo que sea necesario liberar al auxiliar.
-        return dato;
-
-    //Si el nodo tiene hijo izquierdo e hijo derecho, tengo que buscar un reemplazo.
-    } else {
-        //voy a buscar un reemplazo buscando el mayor de sus hijos menores.
-        nodo_abb_t* nodo_reemplazo = rec_buscar_nodo_reemplazo(nodo->izq);
-        //si falla la busqueda, retorno NULL.
-        if (!nodo_reemplazo) {
-            return NULL;
-        }
-        //Sino, me guardo un puntero al nodo a borrar
-    }
-}
-
 //funcion auxiliar que retorna cantidad de hijos de un arbol.
 //PRE: Se pasa un nodo no nulo.
 //Post: Retorna la cantidad de hijos del nodo.
@@ -384,7 +306,18 @@ size_t contar_hijos_nodo(nodo_abb_t* nodo) {
 }
 
 //seguir instrucciones de lauti en video de borrar. (08/06/2020)
-void *abb_borrar_dos(abb_t *arbol, const char *clave) {
+//Se localizar el nodo a eliminar.
+// Hay tres casos posibles:
+// Si el nodo es una hoja (es decir: no tiene hijos), se elimina.
+// Si el nodo tiene un solo hijo, se elimina el nodo y se reemplaza con su hijo.
+// Si el nodo tiene dos hijos no se elimina el nodo, sino que se reemplaza con alguna de estas dos opciones:
+    // * El siguiente inorder (es decir, con el menor de sus hijos mayores)
+    // * El anterior inorder (el mayor de sus hijos menores).
+
+// Se llama a la eliminación recursiva en el subárbol correspondiente de acuerdo a la estrategia de eliminación elegida.
+// Como se eligió o bien el menor de sus hijos mayores o el mayor de sus hijos menores,
+// obligatoriamente al nodo a borrar le va a faltar un hijo, haciendo que se caiga en alguno de los dos primeros casos.
+void *abb_borrar(abb_t *arbol, const char *clave) {
     //Busco el nodo padre. Si el nodo buscado no tiene padre o bien es la raiz, o bien el abb está vacio.
     //Si encuentro al padre, tengo que ver si hay que borrar al hijo izq o al hijo der.
     nodo_abb_t* nodo_padre = rec_buscar_nodo_padre(arbol->raiz, arbol->comparar, clave);
@@ -417,7 +350,7 @@ void *abb_borrar_dos(abb_t *arbol, const char *clave) {
     //si hay nodo padre, entonces tengo que ver quién es el hijo.
     } else {
         //me fijo si es el hijo izquierdo el nodo que busco.
-        if (arbol->comparar(nodo_padre->izq, clave) == 0) {
+        if (arbol->comparar(nodo_padre->izq->clave, clave) == 0) {
             //Verifico que tenga un hijo, dos o ninguno.
             cant_hijos = contar_hijos_nodo(nodo_padre->izq);
 
@@ -500,9 +433,17 @@ void *abb_borrar_dos(abb_t *arbol, const char *clave) {
         }
         //Me guardo puntero a la clave del reemplazante. En realidad la duplico para reutilizar el elimnar nodo, que libera la clave.
         //Recordar que a esto se le hace un malloc internamente (aunque el borrado de clave la libera)
-        char* clave_reemplazante = srtdup(nodo_reemplazo->clave);
+        char* clave_reemplazante = strdup(nodo_reemplazo->clave);
         //borro el reemplazante y me guardo su dato.
-        void* dato_reemplazante = abb_nodo_destruir(nodo_reemplazo, liberar_nodo);
+        //void* dato_reemplazante = abb_nodo_destruir(nodo_reemplazo, liberar_nodo);
+        //Aca voy a probar llamando a la eliminacion de forma recursiva. Deberia tener solo un hijo o ninguno.
+        void* dato_reemplazante = abb_borrar(arbol, clave_reemplazante);
+        //Si falla la eliminacion, libero la clave copiada y retorno NULL
+        if(!dato_reemplazante) {
+            free(clave_reemplazante);
+            return NULL;
+        }
+
         //me guardo puntero a la clave del nodo a borrar
         char* clave_a_borrar = nodo_a_borrar->clave;
         //piso la clave del nodo a borrar.
@@ -511,11 +452,16 @@ void *abb_borrar_dos(abb_t *arbol, const char *clave) {
         void* dato_a_borrar = nodo_a_borrar->dato;
         //piso el dato del nodo a borrar.
         nodo_a_borrar->dato = dato_reemplazante;
+        //libero la clave del nodo a borrar, que ya no la necesito.
+        free(clave_a_borrar);
 
         //entiendo que no deberia actualizar las referencias en el padre. Dejo comentario por las dudas por si falla algo.
         //ahora si, retorno el dato del "nodo borrado".
         return dato_a_borrar;
     }
+
+    //me pide retornar algo por defecto. Tengo que revisar.
+    return NULL;
 }
 
 void *abb_obtener(const abb_t *arbol, const char *clave) {
@@ -560,7 +506,10 @@ size_t abb_cantidad(abb_t *arbol) {
 
 //primitiva que destruye el arbol en sentido post-order.
 void abb_destruir(abb_t *arbol) {
+    //libero toda la estructura de nodos contenida.
     rec_abb_destruir(arbol->raiz, arbol->destruir);
+    //ahora si, libero el arbol.
+    free(arbol);
 }
 
 /* ******************************************************************
