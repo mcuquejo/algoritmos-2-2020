@@ -4,7 +4,6 @@
 #include <string.h>
 #include "abb.h"
 #include "lista.h"
-
 enum tipo_arbol {RAIZ = 1, IZQ = 2, DER = 3};
 /* ******************************************************************
  *                           STRUCTS
@@ -25,16 +24,15 @@ struct abb {
 
 struct abb_iter {
     const abb_t* abb;
-    size_t posicion;
     //Se tiene que implementar como una pila.
-    lista_iter_t* iter_lista;
+    lista_t* lista_abb;
 };
 
 /* ******************************************************************
  *                      FUNCIONES AUXILIARES
  * *****************************************************************/
 //funcion auxiliar a partir de la cual se va a crear un nodo vacio y devolverá un puntero al mismo.
-nodo_abb_t* crear_nodo(const char* clave, void* dato) {
+nodo_abb_t* crear_nodo_abb(const char* clave, void* dato) {
     //me guardo espacio en memoria para el nodo.
     nodo_abb_t* nodo_abb = malloc(sizeof(nodo_abb_t));
     //Si no se creó, retorno NULL.
@@ -60,7 +58,7 @@ nodo_abb_t* crear_nodo(const char* clave, void* dato) {
 
 //funcion auxiliar que busca un nodo a recibiendo un nodo
 //Si encuentro el nodo a partir de la clave, retorno un puntero al mismo.
-//Si no existe un nodo para la clave buscada, se retorna el nodo padre, que es un nodo hoja.
+//Si no existe un nodo para la clave buscada, se retorna NULL
 nodo_abb_t* rec_buscar_nodo(nodo_abb_t* nodo, abb_comparar_clave_t func_comparacion, const char* clave) {
     //caso base. Si no hay nodo, retornar NULL
     if (!nodo) {
@@ -82,12 +80,6 @@ nodo_abb_t* rec_buscar_nodo(nodo_abb_t* nodo, abb_comparar_clave_t func_comparac
     if (func_comparacion(nodo->clave, clave) < 0) {
         //busco el nodo en el hijo derecho.
         return rec_buscar_nodo(nodo->der, func_comparacion, clave);
-    }
-
-    //Si al navegar por los nodos no encontré nada, estoy seguro que si el nodo en el que estoy parado, es un nodo hoja,
-    //Retorno este nodo para que se le inserte el hijo correspondiente.
-    if (!nodo->izq && !nodo->der) {
-        return nodo;
     }
 
     //me pide retornar algo por defecto. Tengo que revisar.
@@ -124,6 +116,9 @@ nodo_abb_t* rec_buscar_nodo_padre(nodo_abb_t* nodo, abb_comparar_clave_t func_co
     // que compare contra lo que haya a la derecha, asi que me muevo por el hijo izquierdo.
     if (func_comparacion(nodo->clave, clave) > 0) {
         //Si el hijo izquierdo no existe, retorno el nodo
+        if (!nodo->izq) {
+            return nodo;
+        }
         //si la clave de mi hijo izquierdo es la que busco, retorno el nodo.
         if (func_comparacion(nodo->izq->clave, clave) == 0) {
             return nodo;
@@ -135,8 +130,12 @@ nodo_abb_t* rec_buscar_nodo_padre(nodo_abb_t* nodo, abb_comparar_clave_t func_co
     //Si la clave provista, es mayor a la de mi nodo, no tiene sentido
     // que compare contra lo que haya a la izquierda, asi que me muevo por el hijo derecho.
     if (func_comparacion(nodo->clave, clave) < 0) {
+        //Si el hijo derecho no existe, retorno el nodo
+        if (!nodo->der) {
+            return nodo;
+        }
         //si la clave de mi hijo derecho es la que busco, retorno el nodo.
-        if (func_comparacion(nodo->izq->clave, clave) == 0) {
+        if (func_comparacion(nodo->der->clave, clave) == 0) {
             return nodo;
         }
         //sino, entro a mi hijo derecho y continuo buscando.
@@ -190,6 +189,7 @@ void rec_abb_destruir(nodo_abb_t* nodo, abb_destruir_dato_t funcion_destruccion)
     if (!nodo) {
         return;
     }
+
     //navego al hijo izquierdo.
     rec_abb_destruir(nodo->izq, funcion_destruccion);
     //navego al hijo derecho.
@@ -198,12 +198,32 @@ void rec_abb_destruir(nodo_abb_t* nodo, abb_destruir_dato_t funcion_destruccion)
     //me creo una variable liberar_nodo por legibilidad.
     bool liberar_nodo = true;
     //ahora opero sobre el nodo, destruyendo la clave y el nodo. Recupero el dato y lo elimino si hay una funcion de destruccion.
-
     void* dato = abb_nodo_destruir(nodo, liberar_nodo);
     //Si hay una funcion de destruccion, borro el dato.
     if (funcion_destruccion) {
         funcion_destruccion(dato);
     }
+}
+
+//funcion auxiliar que retorna cantidad de hijos de un arbol.
+//PRE: Se pasa un nodo no nulo.
+//Post: Retorna la cantidad de hijos del nodo.
+size_t contar_hijos_nodo(nodo_abb_t* nodo) {
+    size_t cant_hijos = 0;
+    //por precondicion no deberia pasarse un nodo nulo, pero por las dudas retorno 0 ante la posibilidad.
+    if (!nodo) {
+        return cant_hijos;
+    }
+    //si tiene hijo izquierdo, actualizo la cantidad de hijos
+    if (nodo->izq) {
+        cant_hijos++;
+    }
+    //si tiene hijo derecho, actualizo la cantidad de hijos
+    if (nodo->der) {
+        cant_hijos++;
+    }
+    //retorno la cantidad de hijos.
+    return cant_hijos;
 }
 
 /* ******************************************************************
@@ -230,81 +250,102 @@ abb_t* abb_crear(abb_comparar_clave_t cmp, abb_destruir_dato_t destruir_dato) {
 }
 
 bool abb_guardar(abb_t *arbol, const char *clave, void *dato){
-    //Busco si ya existe el nodo. Tengo tres opciones,
-    //o es el nodo a actualizar, o es un nodo hoja, que será el padre de mi nuevo nodo, o el arbol esta vacio.
-    nodo_abb_t* nodo = buscar_nodo(arbol, clave);
-    //de la unica forma que se puede dar este caso, es en la primera insercion. Al estar el arbol vacio.
-    if (!nodo) {
-        //creo un nodo nuevo con la clave y el valor pasados.
-        nodo_abb_t* nuevo_nodo = crear_nodo(clave, dato);
-        //si fallo la creacion del nodo, retorno false.
-        if (!nuevo_nodo) {
-            return false;
-        }
-        //guardo el nuevo nodo en la raiz
-        arbol->raiz = nuevo_nodo;
-        //actualizo la cantidad de elementos.
-        arbol->cant++;
-        //retorno true, porque se insertó correctamente.
-        return true;
-    }
-    //Si el nodo que recibo es igual a la clave, no tengo que crear un campo. Tengo que actualizar el existente.
-    if (arbol->comparar(nodo->clave, clave) == 0) {
-        //Si tengo una funcion destruir, destruyo el dato anterior.
-        if(arbol->destruir) {
-            arbol->destruir(nodo->dato);
-        }
-        //ahora si, actualizo el dato.
-        nodo->dato = dato;
-        //retorno true
-        return true;
-    //El nodo no es igual a la clave, entonces creo un campo, ya que tengo que insertar.
-    } else {
-        //creo un nodo nuevo con la clave y el valor pasados.
-        nodo_abb_t* nuevo_nodo = crear_nodo(clave, dato);
-        //si fallo la creacion del nodo, retorno false.
-        if (!nuevo_nodo) {
-            return false;
-        }
-        //si la clave que recibo es menor a la clave del nodo hoja, tengo que insertar el campo en el hijo izquierdo.
-        //Sino,  tengo que insertar en el hijo derecho.
-        if (arbol->comparar(nodo->clave, clave) > 0) {
-            //guardo el nuevo nodo en el hijo izquierdo.
-            nodo->izq = nuevo_nodo;
+    //Busco el nodo padre. Si el nodo buscado no tiene padre o bien es la raiz, o bien el abb está vacio.
+    //Si encuentro al padre, tengo que ver si hay que insertar al hijo izq o al hijo der.
+    nodo_abb_t* nodo_padre = rec_buscar_nodo_padre(arbol->raiz, arbol->comparar, clave);
+    //Si no hay nodo padre, tengo que verificar que el arbol no esté vacio.
+    if (!nodo_padre) {
+        //Si el arbol está vacio, puedo insertar el dato.
+        if (!arbol->raiz) {
+            //creo un nodo nuevo con la clave y el valor pasados.
+            nodo_abb_t* nuevo_nodo = crear_nodo_abb(clave, dato);
+            //si fallo la creacion del nodo, retorno false.
+            if (!nuevo_nodo) {
+                return false;
+            }
+            //guardo el nuevo nodo en la raiz
+            arbol->raiz = nuevo_nodo;
             //actualizo la cantidad de elementos.
             arbol->cant++;
             //retorno true, porque se insertó correctamente.
+            return true;
+        }
+        //si el arbol no está vacio y aun asi retornó null, puede ser que el nodo a insertar sea la raiz.
+        //Comparo la clave de la raiz con la buscada
+        if(arbol->comparar(arbol->raiz->clave, clave) == 0) {
+            //Si tengo una funcion destruir, destruyo el dato anterior.
+            if(arbol->destruir) {
+                arbol->destruir(arbol->raiz->dato);
+            }
+            //ahora si, actualizo el dato.
+            arbol->raiz->dato = dato;
+            //retorno true
             return true;
         } else {
-            //guardo el nuevo nodo en el hijo derecho.
-            nodo->der = nuevo_nodo;
-            //actualizo la cantidad de elementos.
-            arbol->cant++;
-            //retorno true, porque se insertó correctamente.
-            return true;
+            //si no hay nodo padre y hay un dato en la raiz pero no es el buscado, retorno false, ya que algo salio mal.
+            return false;
+        }
+    //Si encontré un nodo padre, tengo dos opciones. Si la clave del padre es mayor, inserto a la izquierda. Si es menor, inserto a la derecha.
+    //Una vez que se de que lado tengo que insertar, me fijo el dato ya existe.
+    } else {
+        //Si la clave del padre es mayor a la buscada, me fijo si tiene hijo a la izquierda.
+        //Puedo comparar por las dudas que se corresponda la clave, pero deberia ser una precondicion de la funcion auxiliar buscar padre.
+        if (arbol->comparar(nodo_padre->clave, clave) > 0 ) {
+            //Si ya existe el campo, actualizo el dato y elimino el anterior.
+            if (nodo_padre->izq) {
+                //Si tengo una funcion destruir, destruyo el dato anterior.
+                if(arbol->destruir) {
+                    arbol->destruir(nodo_padre->izq->dato);
+                }
+                //ahora si, actualizo el dato.
+                nodo_padre->izq->dato = dato;
+                //retorno true
+                return true;
+            } else {
+                //creo un nodo nuevo con la clave y el valor pasados.
+                nodo_abb_t* nuevo_nodo = crear_nodo_abb(clave, dato);
+                //si fallo la creacion del nodo, retorno false.
+                if (!nuevo_nodo) {
+                    return false;
+                }
+                //guardo el nuevo nodo en el hijo izquierdo
+                nodo_padre->izq = nuevo_nodo;
+                //actualizo la cantidad de elementos.
+                arbol->cant++;
+                //retorno true, porque se insertó correctamente.
+                return true;
+            }
+        //no tiene sentido comparar, ya que por precondicion, si trae un nodo, no va a ser el buscado, sino el padre.
+        //Solo lo dejo por las dudas y lo saco si funciona igual.
+        } else if (arbol->comparar(nodo_padre->clave, clave) < 0 ) {
+            //Si ya existe el campo, actualizo el dato y elimino el anterior.
+            if (nodo_padre->der) {
+                //Si tengo una funcion destruir, destruyo el dato anterior.
+                if(arbol->destruir) {
+                    arbol->destruir(nodo_padre->der->dato);
+                }
+                //ahora si, actualizo el dato.
+                nodo_padre->der->dato = dato;
+                //retorno true
+                return true;
+            } else {
+                //creo un nodo nuevo con la clave y el valor pasados.
+                nodo_abb_t* nuevo_nodo = crear_nodo_abb(clave, dato);
+                //si fallo la creacion del nodo, retorno false.
+                if (!nuevo_nodo) {
+                    return false;
+                }
+                //guardo el nuevo nodo en el hijo derecho
+                nodo_padre->der = nuevo_nodo;
+                //actualizo la cantidad de elementos.
+                arbol->cant++;
+                //retorno true, porque se insertó correctamente.
+                return true;
+            }
         }
     }
-}
-
-//funcion auxiliar que retorna cantidad de hijos de un arbol.
-//PRE: Se pasa un nodo no nulo.
-//Post: Retorna la cantidad de hijos del nodo.
-size_t contar_hijos_nodo(nodo_abb_t* nodo) {
-    size_t cant_hijos = 0;
-    //por precondicion no deberia pasarse un nodo nulo, pero por las dudas retorno 0 ante la posibilidad.
-    if (!nodo) {
-        return cant_hijos;
-    }
-    //si tiene hijo izquierdo, actualizo la cantidad de hijos
-    if (nodo->izq) {
-        cant_hijos++;
-    }
-    //si tiene hijo derecho, actualizo la cantidad de hijos
-    if (nodo->der) {
-        cant_hijos++;
-    }
-    //retorno la cantidad de hijos.
-    return cant_hijos;
+    //si por algun motivo no entró en ningun lado, retorno false.
+    return false;
 }
 
 //seguir instrucciones de lauti en video de borrar. (08/06/2020)
@@ -320,6 +361,10 @@ size_t contar_hijos_nodo(nodo_abb_t* nodo) {
 // Como se eligió o bien el menor de sus hijos mayores o el mayor de sus hijos menores,
 // obligatoriamente al nodo a borrar le va a faltar un hijo, haciendo que se caiga en alguno de los dos primeros casos.
 void *abb_borrar(abb_t *arbol, const char *clave) {
+    //Si la clave no pertenece, retorno NULL.
+    if (!abb_pertenece(arbol, clave )) {
+        return NULL;
+    }
     //Busco el nodo padre. Si el nodo buscado no tiene padre o bien es la raiz, o bien el abb está vacio.
     //Si encuentro al padre, tengo que ver si hay que borrar al hijo izq o al hijo der.
     nodo_abb_t* nodo_padre = rec_buscar_nodo_padre(arbol->raiz, arbol->comparar, clave);
@@ -467,38 +512,17 @@ void *abb_borrar(abb_t *arbol, const char *clave) {
 }
 
 void *abb_obtener(const abb_t *arbol, const char *clave) {
-    //Busco si ya existe el nodo. Tengo tres opciones,
-    //o es el nodo, o es un nodo hoja que sería padre de mi nodo buscado, o el arbol esta vacio.
+    //Busco si ya existe el nodo.
     nodo_abb_t* nodo = buscar_nodo(arbol, clave);
-    //de la unica forma que se puede dar este caso, es en la primera insercion. Al estar el arbol vacio.
-    if (!nodo) {
-        //retorno NULL, ya que no existe el campo buscado.
-        return NULL;
-    }
-    //Si el nodo recibido es el buscado, retorno su dato.
-    if (arbol->comparar(nodo->clave, clave) == 0) {
-        return nodo->dato;
-    //Caso contrario, retorno NULL, ya que el nodo buscado no existe.
-    } else {
-        return NULL;
-    }
+    //Si encontró el nodo, retorno el Dato, sino, retorno NULL.
+    return (nodo) ? nodo->dato : NULL;
 }
+
 bool abb_pertenece(const abb_t *arbol, const char *clave){
-    //Busco si ya existe el nodo. Tengo tres opciones,
-    //o es el nodo, o es un nodo hoja que sería padre de mi nodo buscado, o el arbol esta vacio.
+    //Busco si ya existe el nodo.
     nodo_abb_t* nodo = buscar_nodo(arbol, clave);
-    //de la unica forma que se puede dar este caso, es en la primera insercion. Al estar el arbol vacio.
-    if (!nodo) {
-        //retorno false, ya que el campo buscado no pertenece al arbol.
-        return false;
-    }
-    //Si el nodo recibido es el buscado, retorno true, ya que pertenece al arbol.
-    if (arbol->comparar(nodo->clave, clave) == 0) {
-        return true;
-    //Caso contrario, retorno false, ya que el nodo buscado no pertecene al arbol.
-    } else {
-        return false;
-    }
+    //Si encontró el nodo, retorno true, sino, retorno false.
+    return (nodo) ? true : false;
 }
 
 //pimitiva que retorna la cantidad de elementos del arbol.
@@ -517,14 +541,125 @@ void abb_destruir(abb_t *arbol) {
 /* ******************************************************************
  *                       PRIMITIVAS DEL ITERADOR INTERNO
  * *****************************************************************/
+//funcion recursiva que se encarga de iterar en el abb a partir de los nodos.
+void rec_abb_in_order(nodo_abb_t* nodo, bool visitar(const char *, void *, void *), void *extra) {
+    if (!nodo) {
+        return;
+    }
+    //Recorrido in-order.
+    //Primero visito el nodo izquierdo.
+    rec_abb_in_order(nodo->izq, visitar, extra);
+
+    //ejecuto la funcion visitar. Si retorna true, continuo visitando nodos.
+    bool resultado = visitar(nodo->clave , nodo->dato, extra);
+    //Si retorna false, dejo de iterar.
+    if (!resultado) {
+        return;
+    }
+    //Una vez que visito el nodo padre, ahora recorro al hijo derecho.
+    rec_abb_in_order(nodo->der, visitar, extra);
+}
+
 //se navega in order por el abb
-void abb_in_order(abb_t *arbol, bool visitar(const char *, void *, void *), void *extra);
+void abb_in_order(abb_t *arbol, bool visitar(const char *, void *, void *), void *extra){
+    rec_abb_in_order(arbol->raiz, visitar, extra);
+}
+
 /* ******************************************************************
  *                       PRIMITIVAS DEL ITERADOR EXTERNO
  * *****************************************************************/
+
 //se hace con una pila para guardar el estado del iterador. (ver clase 2020-06-12 Clase Práctica)
-abb_iter_t *abb_iter_in_crear(const abb_t *arbol);
-bool abb_iter_in_avanzar(abb_iter_t *iter);
-const char *abb_iter_in_ver_actual(const abb_iter_t *iter);
-bool abb_iter_in_al_final(const abb_iter_t *iter);
-void abb_iter_in_destruir(abb_iter_t* iter);
+//Crea el iterador
+abb_iter_t *abb_iter_in_crear(const abb_t *arbol) {
+    //Asigno espacio en memoria para mi iterador.
+    abb_iter_t* iter_abb = malloc(sizeof(abb_iter_t));
+    //Si falla la asignacion, retorno NULL
+    if(!iter_abb) {
+        return NULL;
+    }
+    //Me guardo puntero al arbol
+    iter_abb->abb = arbol;
+
+    //Asigno en memoria una lista de nodos abb.
+    lista_t* lista_abb = lista_crear();
+    //Si falla, libero el iterador y retorno NULL.
+    if (!lista_abb) {
+        free(iter_abb);
+        return NULL;
+    }
+
+    //Si hay un nodo raiz al momento de crear el iterador, lo guardo en el iterador.
+    if(arbol->raiz) {
+        //Apilo la raiz
+        bool resultado = lista_insertar_primero(lista_abb, arbol->raiz);
+        //Si falla el apilado, se libera la lista y el iterador y se retorna NULL.
+        if(!resultado) {
+            free(lista_abb);
+            free(iter_abb);
+            return NULL;
+        }
+    }
+
+    //si se insertó todo correctamente, inicializo el campo del struct
+    iter_abb->lista_abb = lista_abb;
+
+    //caso contrario, retorno el iterador inicializado.
+    return iter_abb;
+}
+
+
+bool abb_iter_in_avanzar(abb_iter_t *iter) {
+    //Si el iterador se encuentra al final retorno false.
+    if (abb_iter_in_al_final(iter)) {
+        return false;
+    }
+    //desapilo el primer elemento de mi lista.
+    nodo_abb_t* nodo = lista_borrar_primero(iter->lista_abb);
+    if (!nodo) {
+        //si falló el desapilado, retorno false.
+        return false;
+    }
+    //Apilo hijo derecho e hijo izquierdo del desapilado
+    bool resultado_der = lista_insertar_primero(iter->lista_abb, nodo->der);
+    //Si falla el apilado, vuelvo a apilar el nodo para dejar todo en el estado anterior y retorno false
+    if(!resultado_der) {
+        lista_insertar_primero(iter->lista_abb, nodo);
+        return false;
+    }
+
+    bool resultado_izq = lista_insertar_primero(iter->lista_abb, nodo->izq);
+    //Si falla el apilado, deberia desapilar el hijo derecho y apilar el nodo original para dejar en el estado anterior y retornar false.
+    if(!resultado_izq) {
+        lista_borrar_primero(iter->lista_abb);
+        lista_insertar_primero(iter->lista_abb, nodo);
+        return false;
+    }
+    //si pude apilar los hijos, retorno true.
+    return true;
+}
+
+//veo el tope de la pila
+const char *abb_iter_in_ver_actual(const abb_iter_t *iter) {
+    if (abb_iter_in_al_final(iter)) {
+        return NULL;
+    }
+    nodo_abb_t* nodo = lista_ver_primero(iter->lista_abb);
+    if (!nodo) {
+        return NULL;
+    }
+    return nodo->clave;;
+}
+
+//verifico si la pila está vacia.
+bool abb_iter_in_al_final(const abb_iter_t *iter) {
+    return lista_esta_vacia(iter->lista_abb);
+}
+
+//destruyo la pila.
+void abb_iter_in_destruir(abb_iter_t* iter){
+    //libero la lista del abb.
+    lista_destruir(iter->lista_abb, NULL);
+    //libero el iterador del abb.
+    free(iter);
+}
