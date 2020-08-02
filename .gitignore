@@ -2,30 +2,13 @@ pruebas/hola_mundo
 05-pila/pruebas
 06-cola/pruebas
 00-pruebas/pruebas
-.vscode/c_cpp_properties.json
 07-lista/pruebas
-07-lista/lista.zip
-07-lista/pruebas_lista_alumno.o
 08-tp1/pruebas
-09-practica parcial/parcial/2b.jpeg
-09-practica parcial/parcial/parcial.zip
-08-tp1/tp1.zip
-08-tp1/strutil.o
-08-tp1/pila.o
-08-tp1/infix.o
 08-tp1/infix
-08-tp1/dc.o
 08-tp1/dc
-08-tp1/cola.o
-08-tp1/tp1_b.zip
-08-tp1/tp1_c.zip
-08-tp1/tp1_d.zip
-08-tp1/tp1_e.zip
-08-tp1/tp1_f.zip
-08-tp1/tp1_g.zip
-08-tp1/tp1_h.zip
 10-hash/abierto/hash
-10-hash/abierto/hash_pruebas.o
-10-hash/abierto/hash.zip
-10-hash/abierto/hash.o
 11-abb/abb
+*.zip
+*.o
+*.jpeg
+*.json
