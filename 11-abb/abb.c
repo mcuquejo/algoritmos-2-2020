@@ -250,6 +250,21 @@ abb_t* abb_crear(abb_comparar_clave_t cmp, abb_destruir_dato_t destruir_dato) {
 }
 
 bool abb_guardar(abb_t *arbol, const char *clave, void *dato){
+    //Si el abb esta vacio, me ahorro buscar. Inserto directamente
+    if (abb_cantidad(arbol) == 0) {
+        //creo un nodo nuevo con la clave y el valor pasados.
+        nodo_abb_t* nuevo_nodo = crear_nodo_abb(clave, dato);
+        //si fallo la creacion del nodo, retorno false.
+        if (!nuevo_nodo) {
+            return false;
+        }
+        //guardo el nuevo nodo en la raiz
+        arbol->raiz = nuevo_nodo;
+        //actualizo la cantidad de elementos.
+        arbol->cant++;
+        //retorno true, porque se insertó correctamente.
+        return true;
+    }
     //Busco el nodo padre. Si el nodo buscado no tiene padre o bien es la raiz, o bien el abb está vacio.
     //Si encuentro al padre, tengo que ver si hay que insertar al hijo izq o al hijo der.
     nodo_abb_t* nodo_padre = rec_buscar_nodo_padre(arbol->raiz, arbol->comparar, clave);
@@ -512,6 +527,10 @@ void *abb_borrar(abb_t *arbol, const char *clave) {
 }
 
 void *abb_obtener(const abb_t *arbol, const char *clave) {
+    //Si el abb esta vacio, me ahorro buscar.
+    if (arbol->cant == 0) {
+        return NULL;
+    }
     //Busco si ya existe el nodo.
     nodo_abb_t* nodo = buscar_nodo(arbol, clave);
     //Si encontró el nodo, retorno el Dato, sino, retorno NULL.
@@ -519,6 +538,10 @@ void *abb_obtener(const abb_t *arbol, const char *clave) {
 }
 
 bool abb_pertenece(const abb_t *arbol, const char *clave){
+    //Si el abb esta vacio, me ahorro buscar.
+    if (arbol->cant == 0) {
+        return NULL;
+    }
     //Busco si ya existe el nodo.
     nodo_abb_t* nodo = buscar_nodo(arbol, clave);
     //Si encontró el nodo, retorno true, sino, retorno false.
@@ -620,20 +643,27 @@ bool abb_iter_in_avanzar(abb_iter_t *iter) {
         //si falló el desapilado, retorno false.
         return false;
     }
-    //Apilo hijo derecho e hijo izquierdo del desapilado
-    bool resultado_der = lista_insertar_primero(iter->lista_abb, nodo->der);
-    //Si falla el apilado, vuelvo a apilar el nodo para dejar todo en el estado anterior y retorno false
-    if(!resultado_der) {
-        lista_insertar_primero(iter->lista_abb, nodo);
-        return false;
+
+    //Si hay nodo derecho:
+    if (nodo->der) {
+        //Apilo hijo derecho e hijo izquierdo del desapilado
+        bool resultado_der = lista_insertar_primero(iter->lista_abb, nodo->der);
+        //Si falla el apilado, vuelvo a apilar el nodo para dejar todo en el estado anterior y retorno false
+        if(!resultado_der) {
+            lista_insertar_primero(iter->lista_abb, nodo);
+            return false;
+        }
     }
 
-    bool resultado_izq = lista_insertar_primero(iter->lista_abb, nodo->izq);
-    //Si falla el apilado, deberia desapilar el hijo derecho y apilar el nodo original para dejar en el estado anterior y retornar false.
-    if(!resultado_izq) {
-        lista_borrar_primero(iter->lista_abb);
-        lista_insertar_primero(iter->lista_abb, nodo);
-        return false;
+    //Si hay nodo izquierdo
+    if (nodo->izq) {
+        bool resultado_izq = lista_insertar_primero(iter->lista_abb, nodo->izq);
+        //Si falla el apilado, deberia desapilar el hijo derecho y apilar el nodo original para dejar en el estado anterior y retornar false.
+        if(!resultado_izq) {
+            lista_borrar_primero(iter->lista_abb);
+            lista_insertar_primero(iter->lista_abb, nodo);
+            return false;
+        }
     }
     //si pude apilar los hijos, retorno true.
     return true;
